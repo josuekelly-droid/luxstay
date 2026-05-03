@@ -1,10 +1,10 @@
 // src/app/layout.tsx
-import ChatBot from '@/components/chatbot/ChatBot';
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import SessionProvider from '@/components/providers/SessionProvider';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import ChatBot from '@/components/chatbot/ChatBot';
 import { Toaster } from 'react-hot-toast';
 
 export const viewport: Viewport = {
@@ -19,8 +19,19 @@ export const metadata: Metadata = {
     default: 'LuxStay - Immobilier de luxe au Bénin',
     template: '%s | LuxStay',
   },
-  description: 'Trouvez votre chez-vous idéal au Bénin. Des milliers de biens vérifiés : appartements, villas, parcelles. Achetez, louez ou investissez en toute confiance.',
-  keywords: ['immobilier', 'Bénin', 'Cotonou', 'appartement', 'villa', 'parcelle', 'location', 'vente', 'luxstay'],
+  description:
+    'Trouvez votre chez-vous idéal au Bénin. Des milliers de biens vérifiés : appartements, villas, parcelles. Achetez, louez ou investissez en toute confiance.',
+  keywords: [
+    'immobilier',
+    'Bénin',
+    'Cotonou',
+    'appartement',
+    'villa',
+    'parcelle',
+    'location',
+    'vente',
+    'luxstay',
+  ],
   authors: [{ name: 'LuxStay' }],
   creator: 'LuxStay',
   publisher: 'LuxStay',
@@ -66,6 +77,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icon-192.svg" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
