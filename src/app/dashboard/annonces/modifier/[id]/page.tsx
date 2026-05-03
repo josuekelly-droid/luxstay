@@ -1,19 +1,31 @@
 // src/app/dashboard/annonces/modifier/[id]/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Upload, X, Save, Eye, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
+interface ImageItem {
+  id?: string;
+  url: string;
+  publicId?: string;
+  principale: boolean;
+  isNew?: boolean;
+}
+
 export default function ModifierAnnoncePage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
+
   const [formData, setFormData] = useState({
     titre: '',
     description: '',
@@ -35,7 +47,7 @@ export default function ModifierAnnoncePage() {
     balcon: false,
     statut: 'BROUILLON',
   });
-  const [images, setImages] = useState<{ id?: string; url: string; principale: boolean }[]>([]);
+  const [existingImages, setExistingImages] = useState<ImageItem[]>([]);
 
   // Charger l'annonce
   useEffect(() => {
@@ -72,7 +84,15 @@ export default function ModifierAnnoncePage() {
           balcon: a.balcon || false,
           statut: a.statut || 'BROUILLON',
         });
-        setImages(a.images || []);
+        setExistingImages(
+          (a.images || []).map((img: any) => ({
+            id: img.id,
+            url: img.url,
+            publicId: img.publicId,
+            principale: img.principale,
+            isNew: false,
+          }))
+        );
       } else {
         toast.error('Annonce introuvable');
         router.push('/dashboard/annonces');
@@ -88,32 +108,67 @@ export default function ModifierAnnoncePage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Gérer l'ajout d'images (simulation locale)
+  // Ajouter des nouvelles images
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files) {
-      const newImages = Array.from(files).map((file, index) => ({
-        url: URL.createObjectURL(file),
-        principale: images.length === 0 && index === 0,
-      }));
-      setImages([...images, ...newImages].slice(0, 20));
+    if (files && files.length > 0) {
+      const newFiles = Array.from(files);
+      const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+
+      setNewImageFiles(prev => [...prev, ...newFiles]);
+      setNewImagePreviews(prev => [...prev, ...newPreviews]);
     }
+    // Reset pour permettre de sélectionner le même fichier
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleImageRemove = (index: number) => {
-    const newImages = images.filter((_, i) => i !== index);
-    // Si on supprime l'image principale, la première devient principale
-    if (images[index]?.principale && newImages.length > 0) {
-      newImages[0] = { ...newImages[0], principale: true };
-    }
-    setImages(newImages);
+  // Supprimer une nouvelle image
+  const handleRemoveNewImage = (index: number) => {
+    URL.revokeObjectURL(newImagePreviews[index]);
+    setNewImageFiles(prev => prev.filter((_, i) => i !== index));
+    setNewImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSetPrincipale = (index: number) => {
-    setImages(images.map((img, i) => ({
-      ...img,
-      principale: i === index,
-    })));
+  // Supprimer une image existante
+  const handleRemoveExistingImage = (index: number) => {
+    setExistingImages(prev => {
+      const newImages = prev.filter((_, i) => i !== index);
+      // Si on supprime l'image principale
+      if (prev[index]?.principale && newImages.length > 0) {
+        newImages[0] = { ...newImages[0], principale: true };
+      }
+      return newImages;
+    });
+  };
+
+  // Définir une image existante comme principale
+  const handleSetPrincipaleExisting = (index: number) => {
+    setExistingImages(prev =>
+      prev.map((img, i) => ({ ...img, principale: i === index }))
+    );
+    setNewImagePreviews([]);
+    setNewImageFiles([]);
+  };
+
+  // Upload des nouvelles images vers Cloudinary
+  const uploadNewImages = async (): Promise<{ url: string; publicId: string }[]> => {
+    if (newImageFiles.length === 0) return [];
+
+    const uploadFormData = new FormData();
+    newImageFiles.forEach(file => uploadFormData.append('images', file));
+
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: uploadFormData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Erreur lors de l'upload des images");
+    }
+
+    return data.images;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -124,26 +179,79 @@ export default function ModifierAnnoncePage() {
       return;
     }
 
+    const totalImages = existingImages.length + newImageFiles.length;
+    if (totalImages === 0) {
+      toast.error('Ajoutez au moins une image');
+      return;
+    }
+
     setIsSubmitting(true);
+    const toastId = toast.loading('Mise à jour en cours...');
 
     try {
+      // 1. Upload des nouvelles images vers Cloudinary
+      let uploadedImages: { url: string; publicId: string }[] = [];
+      if (newImageFiles.length > 0) {
+        uploadedImages = await uploadNewImages();
+      }
+
+      // 2. Combiner toutes les images
+      const allImages = [
+        // Images existantes
+        ...existingImages.map((img, idx) => ({
+          url: img.url,
+          publicId: img.publicId,
+          principale: newImageFiles.length === 0 ? img.principale : false,
+          ordre: idx,
+        })),
+        // Nouvelles images uploadées
+        ...uploadedImages.map((img, idx) => ({
+          url: img.url,
+          publicId: img.publicId,
+          principale: existingImages.length === 0 ? idx === 0 : false,
+          ordre: existingImages.length + idx,
+        })),
+        // Nouvelles previews (pour les images locales si l'upload échoue)
+        ...newImagePreviews.map((preview, idx) => ({
+          url: preview,
+          publicId: `temp_${Date.now()}_${idx}`,
+          principale: false,
+          ordre: existingImages.length + uploadedImages.length + idx,
+        })),
+      ];
+
+      // S'assurer qu'au moins une image est principale
+      if (!allImages.some(img => img.principale) && allImages.length > 0) {
+        allImages[0].principale = true;
+      }
+
+      // 3. Mettre à jour l'annonce
       const response = await fetch(`/api/annonces/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          images: allImages,
+        }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        toast.success('Annonce mise à jour avec succès !');
+        // Nettoyer les previews
+        newImagePreviews.forEach(preview => URL.revokeObjectURL(preview));
+
+        toast.success('Annonce mise à jour avec succès !', { id: toastId });
         router.push('/dashboard/annonces');
         router.refresh();
       } else {
-        toast.error(data.error || 'Erreur lors de la mise à jour');
+        toast.error(data.error || 'Erreur lors de la mise à jour', { id: toastId });
       }
     } catch (error) {
-      toast.error('Erreur de connexion au serveur');
+      toast.error(
+        error instanceof Error ? error.message : 'Erreur de connexion au serveur',
+        { id: toastId }
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -203,12 +311,7 @@ export default function ModifierAnnoncePage() {
               <label className="block text-sm font-medium text-luxury-green-dark mb-2">
                 Type de bien *
               </label>
-              <select
-                required
-                value={formData.type}
-                onChange={(e) => handleChange('type', e.target.value)}
-                className="input-luxury"
-              >
+              <select required value={formData.type} onChange={(e) => handleChange('type', e.target.value)} className="input-luxury">
                 <option value="APPARTEMENT">Appartement</option>
                 <option value="MAISON">Maison</option>
                 <option value="VILLA">Villa</option>
@@ -221,12 +324,7 @@ export default function ModifierAnnoncePage() {
               <label className="block text-sm font-medium text-luxury-green-dark mb-2">
                 Transaction *
               </label>
-              <select
-                required
-                value={formData.transaction}
-                onChange={(e) => handleChange('transaction', e.target.value)}
-                className="input-luxury"
-              >
+              <select required value={formData.transaction} onChange={(e) => handleChange('transaction', e.target.value)} className="input-luxury">
                 <option value="VENTE">Vente</option>
                 <option value="LOCATION">Location</option>
               </select>
@@ -235,56 +333,22 @@ export default function ModifierAnnoncePage() {
 
           <div className="grid sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-luxury-green-dark mb-2">
-                Prix (FCFA) *
-              </label>
-              <input
-                type="number"
-                required
-                value={formData.prix}
-                onChange={(e) => handleChange('prix', e.target.value)}
-                className="input-luxury"
-                placeholder="85000000"
-              />
+              <label className="block text-sm font-medium text-luxury-green-dark mb-2">Prix (FCFA) *</label>
+              <input type="number" required value={formData.prix} onChange={(e) => handleChange('prix', e.target.value)} className="input-luxury" placeholder="85000000" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-luxury-green-dark mb-2">
-                Surface (m²)
-              </label>
-              <input
-                type="number"
-                value={formData.surface}
-                onChange={(e) => handleChange('surface', e.target.value)}
-                className="input-luxury"
-                placeholder="350"
-              />
+              <label className="block text-sm font-medium text-luxury-green-dark mb-2">Surface (m²)</label>
+              <input type="number" value={formData.surface} onChange={(e) => handleChange('surface', e.target.value)} className="input-luxury" placeholder="350" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-luxury-green-dark mb-2">
-                Chambres
-              </label>
-              <input
-                type="number"
-                value={formData.chambres}
-                onChange={(e) => handleChange('chambres', e.target.value)}
-                className="input-luxury"
-                placeholder="4"
-              />
+              <label className="block text-sm font-medium text-luxury-green-dark mb-2">Chambres</label>
+              <input type="number" value={formData.chambres} onChange={(e) => handleChange('chambres', e.target.value)} className="input-luxury" placeholder="4" />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-luxury-green-dark mb-2">
-              Description *
-            </label>
-            <textarea
-              required
-              rows={5}
-              value={formData.description}
-              onChange={(e) => handleChange('description', e.target.value)}
-              className="input-luxury resize-none"
-              placeholder="Décrivez votre bien en détail..."
-            />
+            <label className="block text-sm font-medium text-luxury-green-dark mb-2">Description *</label>
+            <textarea required rows={5} value={formData.description} onChange={(e) => handleChange('description', e.target.value)} className="input-luxury resize-none" placeholder="Décrivez votre bien en détail..." />
           </div>
         </div>
 
@@ -294,12 +358,7 @@ export default function ModifierAnnoncePage() {
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-luxury-green-dark mb-2">Ville *</label>
-              <select
-                required
-                value={formData.ville}
-                onChange={(e) => handleChange('ville', e.target.value)}
-                className="input-luxury"
-              >
+              <select required value={formData.ville} onChange={(e) => handleChange('ville', e.target.value)} className="input-luxury">
                 <option value="Cotonou">Cotonou</option>
                 <option value="Abomey-Calavi">Abomey-Calavi</option>
                 <option value="Porto-Novo">Porto-Novo</option>
@@ -309,13 +368,7 @@ export default function ModifierAnnoncePage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-luxury-green-dark mb-2">Quartier</label>
-              <input
-                type="text"
-                value={formData.quartier}
-                onChange={(e) => handleChange('quartier', e.target.value)}
-                className="input-luxury"
-                placeholder="Fidjrossè"
-              />
+              <input type="text" value={formData.quartier} onChange={(e) => handleChange('quartier', e.target.value)} className="input-luxury" placeholder="Fidjrossè" />
             </div>
           </div>
         </div>
@@ -334,20 +387,8 @@ export default function ModifierAnnoncePage() {
               { key: 'gardien', label: '👮 Gardien' },
               { key: 'balcon', label: '🌅 Balcon' },
             ].map((eq) => (
-              <label
-                key={eq.key}
-                className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ${
-                  formData[eq.key as keyof typeof formData]
-                    ? 'border-luxury-green bg-luxury-green/5'
-                    : 'border-gray-200 hover:border-luxury-green/30'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={Boolean(formData[eq.key as keyof typeof formData])}
-                  onChange={(e) => handleChange(eq.key, e.target.checked)}
-                  className="w-4 h-4 text-luxury-green rounded"
-                />
+              <label key={eq.key} className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ${formData[eq.key as keyof typeof formData] ? 'border-luxury-green bg-luxury-green/5' : 'border-gray-200 hover:border-luxury-green/30'}`}>
+                <input type="checkbox" checked={Boolean(formData[eq.key as keyof typeof formData])} onChange={(e) => handleChange(eq.key, e.target.checked)} className="w-4 h-4 text-luxury-green rounded" />
                 <span className="text-sm font-medium">{eq.label}</span>
               </label>
             ))}
@@ -357,51 +398,52 @@ export default function ModifierAnnoncePage() {
         {/* Images */}
         <div className="bg-white rounded-2xl shadow-card p-6 space-y-5">
           <h3 className="font-display text-lg font-bold text-luxury-green-dark">
-            Photos <span className="text-sm font-normal text-gray-400">({images.length}/20)</span>
+            Photos <span className="text-sm font-normal text-gray-400">({existingImages.length + newImagePreviews.length}/20)</span>
           </h3>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {images.map((img, index) => (
-              <div key={index} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 group">
+            {/* Images existantes */}
+            {existingImages.map((img, index) => (
+              <div key={`existing-${index}`} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 group">
                 <img src={img.url} alt={`Image ${index + 1}`} className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => handleImageRemove(index)}
-                  className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 opacity-0 group-hover:opacity-100 transition"
-                >
+                <button type="button" onClick={() => handleRemoveExistingImage(index)} className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 opacity-0 group-hover:opacity-100 transition">
                   <X size={14} />
                 </button>
                 {img.principale && (
-                  <span className="absolute bottom-2 left-2 bg-luxury-green text-white text-xs px-2 py-1 rounded-full">
-                    Principale
-                  </span>
+                  <span className="absolute bottom-2 left-2 bg-luxury-green text-white text-xs px-2 py-1 rounded-full">Principale</span>
                 )}
                 {!img.principale && (
-                  <button
-                    type="button"
-                    onClick={() => handleSetPrincipale(index)}
-                    className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition"
-                  >
+                  <button type="button" onClick={() => handleSetPrincipaleExisting(index)} className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition">
                     Définir principale
                   </button>
                 )}
               </div>
             ))}
 
-            {images.length < 20 && (
+            {/* Nouvelles images */}
+            {newImagePreviews.map((preview, index) => (
+              <div key={`new-${index}`} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 group">
+                <img src={preview} alt={`Nouvelle image ${index + 1}`} className="w-full h-full object-cover" />
+                <button type="button" onClick={() => handleRemoveNewImage(index)} className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 opacity-0 group-hover:opacity-100 transition">
+                  <X size={14} />
+                </button>
+                <span className="absolute bottom-2 left-2 bg-luxury-gold text-white text-xs px-2 py-1 rounded-full">Nouvelle</span>
+              </div>
+            ))}
+
+            {/* Bouton ajouter */}
+            {existingImages.length + newImagePreviews.length < 20 && (
               <label className="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-luxury-green hover:bg-luxury-green/5 transition">
                 <Upload size={24} className="text-gray-400 mb-2" />
                 <span className="text-sm text-gray-500">Ajouter</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageAdd}
-                  className="hidden"
-                />
+                <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple onChange={handleImageAdd} className="hidden" />
               </label>
             )}
           </div>
+
+          {existingImages.length + newImagePreviews.length === 0 && (
+            <p className="text-sm text-red-500">Ajoutez au moins une image</p>
+          )}
         </div>
 
         {/* Statut */}
@@ -412,16 +454,7 @@ export default function ModifierAnnoncePage() {
               { value: 'BROUILLON', label: '💾 Brouillon', desc: 'Enregistrer sans publier' },
               { value: 'EN_ATTENTE', label: '⏳ En attente', desc: 'Soumettre pour validation' },
             ].map((s) => (
-              <button
-                key={s.value}
-                type="button"
-                onClick={() => handleChange('statut', s.value)}
-                className={`flex-1 min-w-[200px] p-4 rounded-xl border-2 text-left transition ${
-                  formData.statut === s.value
-                    ? 'border-luxury-green bg-luxury-green/5'
-                    : 'border-gray-200 hover:border-luxury-green/30'
-                }`}
-              >
+              <button key={s.value} type="button" onClick={() => handleChange('statut', s.value)} className={`flex-1 min-w-[200px] p-4 rounded-xl border-2 text-left transition ${formData.statut === s.value ? 'border-luxury-green bg-luxury-green/5' : 'border-gray-200 hover:border-luxury-green/30'}`}>
                 <span className="block font-semibold text-luxury-green-dark">{s.label}</span>
                 <span className="text-xs text-gray-500">{s.desc}</span>
               </button>
@@ -431,26 +464,12 @@ export default function ModifierAnnoncePage() {
 
         {/* Actions */}
         <div className="flex gap-4 justify-end">
-          <Link href="/dashboard/annonces" className="btn-secondary">
-            Annuler
-          </Link>
-          <Link
-            href={`/bien/${id}`}
-            target="_blank"
-            className="btn-secondary flex items-center gap-2"
-          >
+          <Link href="/dashboard/annonces" className="btn-secondary">Annuler</Link>
+          <Link href={`/bien/${id}`} target="_blank" className="btn-secondary flex items-center gap-2">
             <Eye size={20} /> Prévisualiser
           </Link>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="btn-primary flex items-center gap-2 disabled:opacity-50"
-          >
-            {isSubmitting ? (
-              <Loader2 size={20} className="animate-spin" />
-            ) : (
-              <Save size={20} />
-            )}
+          <button type="submit" disabled={isSubmitting} className="btn-primary flex items-center gap-2 disabled:opacity-50">
+            {isSubmitting ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
             {isSubmitting ? 'Enregistrement...' : 'Enregistrer les modifications'}
           </button>
         </div>
