@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1A5F4A"/>
+      <stop offset="100%" style="stop-color:#0F2A1E"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  
+  <!-- Ligne décorative -->
+  <line x1="100" y1="300" x2="500" y2="300" stroke="#D4A843" stroke-width="4" opacity="0.5"/>
+  
+  <!-- Logo -->
+  <text x="100" y="320" fill="#D4A843" font-size="200" font-family="serif" font-weight="bold">LUX</text>
+  <text x="380" y="320" fill="white" font-size="200" font-family="serif" font-weight="bold">STAY</text>
+  
+  <!-- Sous-titre -->
+  <text x="100" y="400" fill="#E8D5B7" font-size="32" font-family="sans-serif">Immobilier de luxe au Bénin</text>
+  <text x="100" y="450" fill="#9DD4BF" font-size="24" font-family="sans-serif">Trouvez votre chez-vous idéal • Achat • Location • Parcelles</text>
+  
+  <!-- URL -->
+  <text x="1100" y="600" text-anchor="end" fill="#72C2A5" font-size="20" font-family="sans-serif">luxstay.bj</text>
+</svg>
