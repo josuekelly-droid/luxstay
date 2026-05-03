@@ -47,7 +47,7 @@ RÈGLES DE FONCTIONNEMENT :
         Authorization: `Bearer ${GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'deepseek-r1-distill-llama-70b',
+        model: 'qwen-2.5-32b',
         messages: [systemMessage, ...messages],
         max_tokens: 1024,
         temperature: 0.3,
