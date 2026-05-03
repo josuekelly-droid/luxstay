@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Mail, Phone, MapPin, Send } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function ContactPage() {
@@ -12,15 +12,36 @@ export default function ContactPage() {
     sujet: '',
     message: '',
   });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success('Message envoyé avec succès !');
-    setFormData({ nom: '', email: '', sujet: '', message: '' });
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Message envoyé avec succès !');
+        setFormData({ nom: '', email: '', sujet: '', message: '' });
+      } else {
+        toast.error(data.error || 'Erreur lors de l\'envoi');
+      }
+    } catch (error) {
+      toast.error('Erreur de connexion');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <main className="min-h-screen pt-24 pb-16 bg-luxury-sand-light">
+    <main className="min-h-screen pt-28 pb-16 bg-luxury-sand-light">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h1 className="font-display text-5xl font-bold text-luxury-green-dark mb-4">
@@ -120,8 +141,9 @@ export default function ContactPage() {
                 />
               </div>
 
-              <button type="submit" className="btn-primary flex items-center gap-2">
-                <Send size={20} /> Envoyer le message
+              <button type="submit" disabled={isLoading} className="btn-primary flex items-center gap-2 disabled:opacity-50">
+                {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
+                {isLoading ? 'Envoi...' : 'Envoyer le message'}
               </button>
             </form>
           </div>
