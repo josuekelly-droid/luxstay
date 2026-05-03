@@ -150,12 +150,12 @@ export default function ConnexionPage() {
           </p>
         </div>
 
-        <div className="mt-6 bg-luxury-green/5 rounded-xl p-4 text-sm">
+        {/* <div className="mt-6 bg-luxury-green/5 rounded-xl p-4 text-sm">
           <p className="font-semibold text-luxury-green-dark mb-2">🔑 Identifiants de test :</p>
           <p className="text-gray-600">admin@luxstay.bj / user123</p>
           <p className="text-gray-600">annonceur1@luxstay.bj / user123</p>
           <p className="text-gray-600">user@luxstay.bj / user123</p>
-        </div>
+        </div> */}
       </div>
     </main>
   );

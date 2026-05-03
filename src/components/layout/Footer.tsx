@@ -83,13 +83,13 @@ export default function Footer() {
 
             {/* Contact */}
             <div className="space-y-3">
-              <a href="tel:+22997000000" className="flex items-center gap-3 text-gray-400 hover:text-luxury-gold transition">
+              <a href="tel:+22954666268" className="flex items-center gap-3 text-gray-400 hover:text-luxury-gold transition">
                 <Phone size={16} className="text-luxury-gold" />
-                <span>+229 97 00 00 00</span>
+                <span>+229 54 66 62 68</span>
               </a>
-              <a href="mailto:contact@luxstay.bj" className="flex items-center gap-3 text-gray-400 hover:text-luxury-gold transition">
+              <a href="mailto:luxstay-bj@outlook.com" className="flex items-center gap-3 text-gray-400 hover:text-luxury-gold transition">
                 <Mail size={16} className="text-luxury-gold" />
-                <span>contact@luxstay.bj</span>
+                <span>luxstay-bj@outlook.com</span>
               </a>
               <div className="flex items-start gap-3 text-gray-400">
                 <MapPin size={16} className="text-luxury-gold mt-0.5" />

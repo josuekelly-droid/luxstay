@@ -150,7 +150,7 @@ export default function TarifsPage() {
               <span className="font-bold text-luxury-green">-30%</span> sur 1 an
             </div>
             <div className="bg-white rounded-xl p-4 shadow-card">
-              Paiement sécurisé via <span className="font-bold text-luxury-gold-dark">Mobile Money</span>
+              Paiement sécurisé via <span className="font-bold text-luxury-gold-dark">Mobile Money - PayPal - Cryptos</span>
             </div>
           </div>
         </div>

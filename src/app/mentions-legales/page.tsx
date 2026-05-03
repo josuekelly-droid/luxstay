@@ -23,8 +23,8 @@ export default function MentionsLegalesPage() {
             <p>Le site internet <strong className="text-luxury-green">LuxStay</strong> est édité par la société LuxStay SARL, au capital de 1 000 000 FCFA, immatriculée au Registre du Commerce et du Crédit Mobilier de Cotonou sous le numéro RB/COT/2026-XXXX.</p>
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li>Siège social : Haie Vive, Cotonou, Bénin</li>
-              <li>Téléphone : +229 97 00 00 00</li>
-              <li>Email : contact@luxstay.bj</li>
+              <li>Téléphone : +229 54 66 62 68</li>
+              <li>Email : luxstay-bj@outlook.com</li>
               <li>Directeur de publication : LuxStay</li>
             </ul>
           </section>
