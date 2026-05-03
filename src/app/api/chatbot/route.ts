@@ -1,8 +1,8 @@
 // src/app/api/chatbot/route.ts
 import { NextResponse } from 'next/server';
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY!;
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY!;
+const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
 
 export async function POST(request: Request) {
   try {
@@ -40,25 +40,25 @@ RÈGLES DE FONCTIONNEMENT :
 - Reste poli et professionnel en toutes circonstances`,
     };
 
-    const response = await fetch(GROQ_API_URL, {
+    const response = await fetch(DEEPSEEK_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${GROQ_API_KEY}`,
+        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'qwen-2.5-32b',
+        model: 'deepseek-chat',
         messages: [systemMessage, ...messages],
         max_tokens: 1024,
         temperature: 0.3,
-        top_p: 0.9,
       }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error?.message || 'Erreur API Groq');
+      console.error('Erreur DeepSeek:', data);
+      throw new Error(data.error?.message || 'Erreur API DeepSeek');
     }
 
     return NextResponse.json({
