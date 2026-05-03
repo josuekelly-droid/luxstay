@@ -17,6 +17,7 @@ export async function GET(
         },
         user: {
           select: {
+            id: true,        // ✅ AJOUTÉ
             nom: true,
             prenom: true,
             telephone: true,
