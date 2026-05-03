@@ -20,9 +20,11 @@ import {
   CreditCard,
   User,
   ChevronRight,
+  Search,
 } from 'lucide-react';
 
-const menuItems = [
+// Menu pour les ANNONCEURS
+const menuAnnonceur = [
   {
     label: 'Vue d\'ensemble',
     href: '/dashboard',
@@ -60,10 +62,42 @@ const menuItems = [
   },
 ];
 
+// Menu pour les ACHETEURS (USER)
+const menuUser = [
+  {
+    label: 'Vue d\'ensemble',
+    href: '/dashboard',
+    icon: <LayoutDashboard size={20} />,
+  },
+  {
+    label: 'Explorer les biens',
+    href: '/recherche',
+    icon: <Search size={20} />,
+  },
+  {
+    label: 'Messages',
+    href: '/dashboard/messages',
+    icon: <MessageSquare size={20} />,
+  },
+  {
+    label: 'Favoris',
+    href: '/dashboard/favoris',
+    icon: <Heart size={20} />,
+  },
+  {
+    label: 'Profil',
+    href: '/dashboard/profil',
+    icon: <User size={20} />,
+  },
+];
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const userRole = (session?.user as any)?.role || 'USER';
+  const menuItems = userRole === 'USER' ? menuUser : menuAnnonceur;
 
   if (status === 'loading') {
     return (
@@ -75,6 +109,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (status === 'unauthenticated') {
     redirect('/connexion');
+  }
+
+  // Rediriger les admins vers /admin
+  if (userRole === 'ADMIN') {
+    redirect('/admin');
   }
 
   return (
@@ -111,14 +150,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="p-6 border-b border-luxury-sand/30">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-luxury-green rounded-full flex items-center justify-center text-white font-bold">
-              {session?.user?.prenom?.charAt(0)}
-              {session?.user?.nom?.charAt(0)}
+              {(session?.user as any)?.prenom?.charAt(0) || '?'}
+              {(session?.user as any)?.nom?.charAt(0) || '?'}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-luxury-green-dark truncate">
-                {session?.user?.prenom} {session?.user?.nom}
+                {(session?.user as any)?.prenom} {(session?.user as any)?.nom}
               </p>
               <p className="text-xs text-gray-500 truncate">{session?.user?.email}</p>
+              <span className={`text-xs px-2 py-0.5 rounded-full mt-1 inline-block ${
+                userRole === 'ANNOUNCER' ? 'bg-luxury-gold/20 text-luxury-gold-dark' : 'bg-gray-100 text-gray-600'
+              }`}>
+                {userRole === 'ANNOUNCER' ? 'Annonceur' : 'Acheteur'}
+              </span>
             </div>
           </div>
         </div>
@@ -128,7 +172,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <ul className="space-y-1">
             {menuItems.map((item) => {
               const isActive = pathname === item.href || 
-                (item.href !== '/dashboard' && pathname?.startsWith(item.href));
+                (item.href !== '/dashboard' && item.href !== '/recherche' && pathname?.startsWith(item.href));
               
               return (
                 <li key={item.href}>
@@ -176,7 +220,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
 
             <h1 className="text-lg font-semibold text-luxury-green-dark hidden sm:block">
-              {menuItems.find(item => pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href)))?.label || 'Dashboard'}
+              {menuItems.find(item => {
+                if (item.href === '/recherche') return false;
+                return pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href));
+              })?.label || 'Dashboard'}
             </h1>
 
             <div className="flex items-center gap-4">
