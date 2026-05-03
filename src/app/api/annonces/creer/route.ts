@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const userId = session.user.id;
     const data = await request.json();
 
-    // Validation
+    // Validation des champs obligatoires
     if (!data.titre || !data.prix || !data.description || !data.ville) {
       return NextResponse.json(
         { error: 'Champs obligatoires manquants : titre, prix, description, ville' },
@@ -33,30 +33,75 @@ export async function POST(request: Request) {
       );
     }
 
-    // Vérifier les limites d'abonnement
-    const abonnement = await prisma.abonnement.findFirst({
+    // ==========================================
+    // VÉRIFICATION ET GESTION DE L'ABONNEMENT
+    // ==========================================
+
+    // 1. Récupérer l'abonnement actif
+    let abonnement = await prisma.abonnement.findFirst({
       where: { userId, actif: true },
     });
 
-    if (abonnement) {
-      const annoncesActives = await prisma.annonce.count({
-        where: {
-          userId,
-          statut: { in: ['PUBLIEE', 'EN_ATTENTE'] },
-        },
+    // 2. Vérifier si l'abonnement a expiré
+    if (abonnement && new Date() > new Date(abonnement.fin)) {
+      // Désactiver l'abonnement expiré
+      await prisma.abonnement.update({
+        where: { id: abonnement.id },
+        data: { actif: false },
       });
 
-      if (annoncesActives >= abonnement.annoncesMax) {
-        return NextResponse.json(
-          {
-            error: `Limite de ${abonnement.annoncesMax} annonces atteinte. Passez à un plan supérieur.`,
-          },
-          { status: 403 }
-        );
-      }
+      // Créer automatiquement un abonnement gratuit
+      abonnement = await prisma.abonnement.create({
+        data: {
+          userId,
+          plan: 'GRATUIT',
+          duree: 'MENSUEL',
+          debut: new Date(),
+          fin: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          annoncesMax: 5,
+          photosParAnnonce: 5,
+          annoncesUtilisees: 0,
+        },
+      });
     }
 
-    // Créer l'annonce
+    // 3. Si aucun abonnement n'existe, créer un gratuit
+    if (!abonnement) {
+      abonnement = await prisma.abonnement.create({
+        data: {
+          userId,
+          plan: 'GRATUIT',
+          duree: 'MENSUEL',
+          debut: new Date(),
+          fin: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          annoncesMax: 5,
+          photosParAnnonce: 5,
+          annoncesUtilisees: 0,
+        },
+      });
+    }
+
+    // 4. Vérifier les limites d'annonces
+    const annoncesActives = await prisma.annonce.count({
+      where: {
+        userId,
+        statut: { in: ['PUBLIEE', 'EN_ATTENTE'] },
+      },
+    });
+
+    if (annoncesActives >= abonnement.annoncesMax) {
+      return NextResponse.json(
+        {
+          error: `Limite de ${abonnement.annoncesMax} annonces atteinte. Passez à un plan supérieur pour publier plus d'annonces.`,
+        },
+        { status: 403 }
+      );
+    }
+
+    // ==========================================
+    // CRÉATION DE L'ANNONCE
+    // ==========================================
+
     const annonce = await prisma.annonce.create({
       data: {
         userId,
@@ -79,7 +124,6 @@ export async function POST(request: Request) {
         gardien: data.gardien || false,
         balcon: data.balcon || false,
         statut: 'EN_ATTENTE',
-        // Images
         images: {
           create: data.images.map((img: any, index: number) => ({
             url: img.url,
@@ -94,13 +138,11 @@ export async function POST(request: Request) {
       },
     });
 
-    // Mettre à jour le compteur
-    if (abonnement) {
-      await prisma.abonnement.update({
-        where: { id: abonnement.id },
-        data: { annoncesUtilisees: abonnement.annoncesUtilisees + 1 },
-      });
-    }
+    // Mettre à jour le compteur d'annonces utilisées
+    await prisma.abonnement.update({
+      where: { id: abonnement.id },
+      data: { annoncesUtilisees: abonnement.annoncesUtilisees + 1 },
+    });
 
     return NextResponse.json(
       {
