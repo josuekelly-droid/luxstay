@@ -1,7 +1,7 @@
 // src/app/paiement/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -17,7 +17,7 @@ const plans: Record<Plan, { nom: string; tarifs: Record<Duree, number> }> = {
   BUSINESS: { nom: 'Business', tarifs: { MENSUEL: 70000, TROIS_MOIS: 178500, ANNUEL: 588000 } },
 };
 
-export default function PaiementPage() {
+function PaiementContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
@@ -55,7 +55,6 @@ export default function PaiementPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Rediriger vers l'URL de paiement
         if (data.url || data.approveUrl || data.checkoutUrl) {
           window.location.href = data.url || data.approveUrl || data.checkoutUrl;
         } else {
@@ -91,7 +90,6 @@ export default function PaiementPage() {
               <span className="font-bold text-luxury-green-dark">{plan.nom}</span>
             </div>
 
-            {/* Durée */}
             <div className="flex gap-2 mb-4">
               {(['MENSUEL', 'TROIS_MOIS', 'ANNUEL'] as Duree[]).map((d) => (
                 <button
@@ -170,7 +168,6 @@ export default function PaiementPage() {
             </div>
           </div>
 
-          {/* Bouton */}
           <button
             onClick={handlePayer}
             disabled={isLoading}
@@ -190,5 +187,17 @@ export default function PaiementPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function PaiementPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen pt-24 flex items-center justify-center bg-luxury-sand-light">
+        <div className="w-8 h-8 border-4 border-luxury-green border-t-transparent rounded-full animate-spin" />
+      </main>
+    }>
+      <PaiementContent />
+    </Suspense>
   );
 }
