@@ -82,7 +82,7 @@ async function activerAbonnement(userId: string, paiementId: string) {
       fin: new Date(Date.now() + dureeEnJours(duree) * 24 * 60 * 60 * 1000),
       annoncesMax: annoncesParPlan(plan),
       photosParAnnonce: photosParPlan(plan),
-      paiementId,
+      paiement: { connect: { id: paiementId } },
     },
   });
 }
