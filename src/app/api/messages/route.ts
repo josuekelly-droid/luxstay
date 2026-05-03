@@ -65,11 +65,19 @@ export async function POST(request: Request) {
         contenu,
         annonceId: annonceId || null,
       },
+      include: {
+        expediteur: {
+          select: { nom: true, prenom: true },
+        },
+        annonce: {
+          select: { titre: true },
+        },
+      },
     });
 
     return NextResponse.json({ success: true, message }, { status: 201 });
   } catch (error) {
     console.error('Erreur envoi message:', error);
-    return NextResponse.json({ error: 'Erreur envoi' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur lors de l\'envoi' }, { status: 500 });
   }
 }
