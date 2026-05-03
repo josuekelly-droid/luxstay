@@ -1,4 +1,5 @@
 // src/app/layout.tsx
+import ChatBot from '@/components/chatbot/ChatBot';
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import SessionProvider from '@/components/providers/SessionProvider';
@@ -73,6 +74,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Navbar />
           {children}
           <Footer />
+          <ChatBot />
           <Toaster position="top-center" />
         </SessionProvider>
       </body>
