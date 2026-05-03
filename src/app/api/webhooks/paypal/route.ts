@@ -61,6 +61,12 @@ async function activerAbonnement(userId: string, paiementId: string) {
     data: { actif: false },
   });
 
+  // ✅ PASSER EN ANNONCEUR
+  await prisma.user.update({
+    where: { id: userId },
+    data: { role: 'ANNOUNCER' },
+  });
+
   // 2. Récupérer le paiement
   const paiement = await prisma.paiement.findUnique({
     where: { id: paiementId },
