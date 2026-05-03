@@ -7,7 +7,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import {
-  MapPin, Bed, Bath, Maximize, Heart, Share2, Phone, Mail,
+  MapPin, Bed, Bath, Maximize, Heart, Share2, Phone,
   Check, ArrowLeft, Loader2, Eye, Send, Flag, MessageSquare,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -146,26 +146,31 @@ export default function BienDetailPage() {
       toast.error('Écrivez un message');
       return;
     }
+    if (!annonce?.user?.id) {
+      toast.error('Annonceur non disponible');
+      return;
+    }
     setIsSending(true);
     try {
       const response = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          destinataireId: annonce?.user.id,
+          destinataireId: annonce.user.id,
           contenu: message,
           annonceId: id,
         }),
       });
+      const data = await response.json();
       if (response.ok) {
         toast.success('Message envoyé !');
         setMessage('');
         setShowContactForm(false);
       } else {
-        toast.error('Erreur lors de l\'envoi');
+        toast.error(data.error || 'Erreur lors de l\'envoi');
       }
     } catch (error) {
-      toast.error('Erreur');
+      toast.error('Erreur de connexion');
     } finally {
       setIsSending(false);
     }
@@ -218,20 +223,16 @@ export default function BienDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-luxury-sand-light">
-      {/* Breadcrumb */}
-      <div className="bg-white border-b border-luxury-sand/30">
-        <div className="container mx-auto px-4 py-3">
-          <button
-            onClick={() => router.back()}
-            className="text-sm text-gray-500 hover:text-luxury-green flex items-center gap-1"
-          >
-            <ArrowLeft size={16} /> Retour
-          </button>
-        </div>
-      </div>
+    <main className="min-h-screen bg-luxury-sand-light pt-24 pb-16">
+      <div className="container mx-auto px-4">
+        {/* Bouton retour */}
+        <button
+          onClick={() => router.back()}
+          className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-luxury-green mb-6 transition"
+        >
+          <ArrowLeft size={18} /> Retour aux résultats
+        </button>
 
-      <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Colonne gauche - Images et détails */}
           <div className="lg:col-span-2 space-y-6">
@@ -259,7 +260,11 @@ export default function BienDetailPage() {
               {annonce.images.length > 1 && (
                 <div className="p-4 flex gap-3 overflow-x-auto">
                   {annonce.images.map((img, index) => (
-                    <button key={img.id} onClick={() => setImageActive(index)} className={`relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border-2 transition ${index === imageActive ? 'border-luxury-gold' : 'border-transparent'}`}>
+                    <button
+                      key={img.id}
+                      onClick={() => setImageActive(index)}
+                      className={`relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border-2 transition ${index === imageActive ? 'border-luxury-gold' : 'border-transparent'}`}
+                    >
                       <Image src={img.url} alt={`Image ${index + 1}`} fill sizes="80px" className="object-cover" />
                     </button>
                   ))}
