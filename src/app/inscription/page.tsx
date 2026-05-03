@@ -18,7 +18,7 @@ export default function InscriptionPage() {
     telephone: '',
     password: '',
     confirmPassword: '',
-    role: 'USER', // USER ou ANNOUNCER
+    role: 'USER',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,8 +66,8 @@ export default function InscriptionPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-luxury-sand-light py-12 px-4">
-      <div className="max-w-md w-full">
+    <main className="min-h-screen pt-28 pb-16 flex items-start justify-center bg-luxury-sand-light px-4">
+      <div className="max-w-md w-full mt-8 sm:mt-12">
         <div className="text-center mb-8">
           <Link href="/" className="text-4xl font-bold">
             <span className="text-luxury-gold">LUX</span>
@@ -118,7 +118,6 @@ export default function InscriptionPage() {
               </div>
             </div>
 
-            {/* Nom & Prénom */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-luxury-green-dark mb-2">Nom</label>
@@ -133,7 +132,6 @@ export default function InscriptionPage() {
               </div>
             </div>
 
-            {/* Email */}
             <div>
               <label className="block text-sm font-medium text-luxury-green-dark mb-2">Adresse email</label>
               <div className="relative">
@@ -142,7 +140,6 @@ export default function InscriptionPage() {
               </div>
             </div>
 
-            {/* Téléphone */}
             <div>
               <label className="block text-sm font-medium text-luxury-green-dark mb-2">Téléphone</label>
               <div className="relative">
@@ -151,7 +148,6 @@ export default function InscriptionPage() {
               </div>
             </div>
 
-            {/* Mot de passe */}
             <div>
               <label className="block text-sm font-medium text-luxury-green-dark mb-2">Mot de passe</label>
               <div className="relative">
@@ -163,7 +159,6 @@ export default function InscriptionPage() {
               </div>
             </div>
 
-            {/* Confirmation */}
             <div>
               <label className="block text-sm font-medium text-luxury-green-dark mb-2">Confirmer le mot de passe</label>
               <div className="relative">
@@ -172,7 +167,6 @@ export default function InscriptionPage() {
               </div>
             </div>
 
-            {/* Submit */}
             <button type="submit" disabled={isLoading} className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50">
               {isLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <UserPlus size={20} />}
               {isLoading ? 'Inscription...' : "S'inscrire"}

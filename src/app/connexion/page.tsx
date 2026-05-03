@@ -31,13 +31,11 @@ export default function ConnexionPage() {
       if (result?.error) {
         toast.error(result.error);
       } else if (result?.ok) {
-        // Récupérer la session pour connaître le rôle
         const sessionRes = await fetch('/api/auth/session');
         const sessionData = await sessionRes.json();
 
         toast.success('Connexion réussie !');
-        
-        // Rediriger selon le rôle
+
         if (sessionData?.user?.role === 'ADMIN') {
           router.push('/admin');
         } else {
@@ -53,8 +51,8 @@ export default function ConnexionPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-luxury-sand-light py-12 px-4">
-      <div className="max-w-md w-full">
+    <main className="min-h-screen pt-28 pb-16 flex items-start justify-center bg-luxury-sand-light px-4">
+      <div className="max-w-md w-full mt-8 sm:mt-12">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="text-4xl font-bold">
@@ -67,7 +65,6 @@ export default function ConnexionPage() {
         {/* Formulaire */}
         <div className="bg-white rounded-2xl shadow-luxury p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email */}
             <div>
               <label className="block text-sm font-medium text-luxury-green-dark mb-2">
                 Adresse email
@@ -85,7 +82,6 @@ export default function ConnexionPage() {
               </div>
             </div>
 
-            {/* Mot de passe */}
             <div>
               <label className="block text-sm font-medium text-luxury-green-dark mb-2">
                 Mot de passe
@@ -110,7 +106,6 @@ export default function ConnexionPage() {
               </div>
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={isLoading}
@@ -125,7 +120,6 @@ export default function ConnexionPage() {
             </button>
           </form>
 
-          {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-200" />
@@ -135,7 +129,6 @@ export default function ConnexionPage() {
             </div>
           </div>
 
-          {/* Google */}
           <button
             onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
             className="w-full flex items-center justify-center gap-3 border-2 border-gray-200 rounded-xl py-3 hover:bg-gray-50 transition font-medium"
@@ -149,7 +142,6 @@ export default function ConnexionPage() {
             Google
           </button>
 
-          {/* Lien inscription */}
           <p className="text-center mt-6 text-sm text-gray-600">
             Pas encore de compte ?{' '}
             <Link href="/inscription" className="text-luxury-green font-semibold hover:underline">
@@ -158,7 +150,6 @@ export default function ConnexionPage() {
           </p>
         </div>
 
-        {/* Identifiants test */}
         <div className="mt-6 bg-luxury-green/5 rounded-xl p-4 text-sm">
           <p className="font-semibold text-luxury-green-dark mb-2">🔑 Identifiants de test :</p>
           <p className="text-gray-600">admin@luxstay.bj / user123</p>
