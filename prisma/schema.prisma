@@ -1,0 +1,327 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// MODÈLES PRINCIPAUX
+// ============================================
+
+enum Role {
+  USER
+  ANNOUNCER
+  ADMIN
+}
+
+enum StatutAnnonce {
+  BROUILLON
+  EN_ATTENTE
+  PUBLIEE
+  REFUSEE
+  EXPIREE
+  ARCHIVEE
+}
+
+enum TypeBien {
+  APPARTEMENT
+  MAISON
+  VILLA
+  STUDIO
+  DUPLEX
+  PARCELLE
+  IMMEUBLE
+  BUREAU
+}
+
+enum Transaction {
+  VENTE
+  LOCATION
+}
+
+enum PlanAbonnement {
+  GRATUIT
+  STANDARD
+  PREMIUM
+  BUSINESS
+}
+
+enum DureeAbonnement {
+  MENSUEL
+  TROIS_MOIS
+  ANNUEL
+}
+
+enum StatutPaiement {
+  EN_ATTENTE
+  COMPLETE
+  ECHOUE
+  REMBOURSE
+}
+
+enum ModePaiement {
+  FEDAPAY
+  PAYPAL
+  BINANCE
+  MOBILE_MONEY
+}
+
+// ============================================
+// UTILISATEURS
+// ============================================
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  password          String
+  nom               String
+  prenom            String
+  telephone         String
+  avatar            String?
+  role              Role      @default(USER)
+  emailVerifie      Boolean   @default(false)
+  dateInscription   DateTime  @default(now())
+  derniereConnexion DateTime?
+  bloque            Boolean   @default(false)
+
+  // Relations
+  annonces        Annonce[]
+  abonnements     Abonnement[]
+  paiements       Paiement[]
+  messagesEnvoyes Message[]      @relation("messages_envoyes")
+  messagesRecus   Message[]      @relation("messages_recus")
+  favoris         Favori[]
+  notifications   Notification[]
+  sessions        Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================
+// ANNONCES
+// ============================================
+
+model Annonce {
+  id                String      @id @default(cuid())
+  userId            String
+  titre             String
+  description       String
+  type              TypeBien
+  transaction       Transaction
+  prix              Float
+  devise            String      @default("FCFA")
+  surface           Float?
+  pieces            Int?
+  chambres          Int?
+  sallesBain        Int?
+  etage             Int?
+  anneeConstruction Int?
+
+  // Localisation
+  pays      String  @default("Bénin")
+  ville     String
+  quartier  String
+  adresse   String?
+  latitude  Float?
+  longitude Float?
+
+  // Options
+  meuble        Boolean @default(false)
+  climatisation Boolean @default(false)
+  piscine       Boolean @default(false)
+  parking       Boolean @default(false)
+  gardien       Boolean @default(false)
+  groupeElectro Boolean @default(false)
+  wifi          Boolean @default(false)
+  balcon        Boolean @default(false)
+
+  // Statut et visibilité
+  statut          StatutAnnonce @default(BROUILLON)
+  boost           Boolean       @default(false)
+  prioritaire     Boolean       @default(false)
+  epinglee        Boolean       @default(false)
+  datePublication DateTime?
+  dateExpiration  DateTime?
+  motifRefus      String?
+
+  // Compteurs
+  vues     Int @default(0)
+  contacts Int @default(0)
+
+  // Relations
+  user    User     @relation(fields: [userId], references: [id])
+  images  Image[]
+  favoris Favori[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Message   Message[]
+
+  @@index([userId])
+  @@index([ville, quartier])
+  @@index([type, transaction])
+  @@index([prix])
+}
+
+model Image {
+  id         String  @id @default(cuid())
+  annonceId  String
+  url        String
+  publicId   String
+  principale Boolean @default(false)
+  ordre      Int     @default(0)
+
+  annonce Annonce @relation(fields: [annonceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+// ============================================
+// ABONNEMENTS
+// ============================================
+
+model Abonnement {
+  id        String          @id @default(cuid())
+  userId    String
+  plan      PlanAbonnement  @default(GRATUIT)
+  duree     DureeAbonnement
+  debut     DateTime        @default(now())
+  fin       DateTime
+  actif     Boolean         @default(true)
+  autoRenew Boolean         @default(false)
+
+  // Limites
+  annoncesMax       Int
+  photosParAnnonce  Int
+  annoncesUtilisees Int @default(0)
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id])
+  paiement Paiement?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Paiement {
+  id            String         @id @default(cuid())
+  userId        String
+  abonnementId  String?        @unique
+  modePaiement  ModePaiement
+  montant       Float
+  devise        String         @default("FCFA")
+  statut        StatutPaiement @default(EN_ATTENTE)
+  transactionId String?        @unique
+  reference     String         @unique
+
+  // Métadonnées paiement
+  metaData Json?
+
+  // Relations
+  user       User        @relation(fields: [userId], references: [id])
+  abonnement Abonnement? @relation(fields: [abonnementId], references: [id])
+
+  datePaiement DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+}
+
+// ============================================
+// MESSAGERIE
+// ============================================
+
+model Message {
+  id             String  @id @default(cuid())
+  expediteurId   String
+  destinataireId String
+  annonceId      String?
+  contenu        String
+  lu             Boolean @default(false)
+
+  expediteur   User     @relation("messages_envoyes", fields: [expediteurId], references: [id])
+  destinataire User     @relation("messages_recus", fields: [destinataireId], references: [id])
+  annonce      Annonce? @relation(fields: [annonceId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+}
+
+// ============================================
+// FAVORIS
+// ============================================
+
+model Favori {
+  id        String @id @default(cuid())
+  userId    String
+  annonceId String
+
+  user    User    @relation(fields: [userId], references: [id])
+  annonce Annonce @relation(fields: [annonceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, annonceId])
+  @@index([userId])
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id      String  @id @default(cuid())
+  userId  String
+  titre   String
+  message String
+  type    String
+  lu      Boolean @default(false)
+  lien    String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// ============================================
+// SESSIONS (NextAuth)
+// ============================================
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  expires      DateTime
+  sessionToken String   @unique
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+// ============================================
+// VILLES & QUARTIERS (Bénin)
+// ============================================
+
+model Ville {
+  id     String  @id @default(cuid())
+  nom    String  @unique
+  slug   String  @unique
+  active Boolean @default(true)
+
+  quartiers Quartier[]
+}
+
+model Quartier {
+  id      String  @id @default(cuid())
+  villeId String
+  nom     String
+  slug    String
+  active  Boolean @default(true)
+
+  ville Ville @relation(fields: [villeId], references: [id])
+
+  @@unique([villeId, nom])
+}
