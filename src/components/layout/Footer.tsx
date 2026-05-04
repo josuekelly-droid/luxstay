@@ -68,31 +68,32 @@ export default function Footer() {
   return (
     <footer className="bg-luxury-green-dark text-white">
       {/* Partie principale */}
-      <div className="container mx-auto px-4 py-16">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-10">
+      <div className="container mx-auto px-4 py-10 sm:py-12 md:py-16 max-w-7xl 2xl:max-w-[1400px]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-10">
+          
           {/* Colonne 1 - Logo + description */}
           <div className="lg:col-span-2">
-            <Link href="/" className="text-3xl font-bold inline-block mb-4">
+            <Link href="/" className="text-2xl sm:text-3xl font-bold inline-block mb-3 sm:mb-4">
               <span className="text-luxury-gold">LUX</span>
               <span className="text-white">STAY</span>
             </Link>
-            <p className="text-gray-400 mb-6 max-w-md leading-relaxed">
+            <p className="text-gray-400 mb-5 sm:mb-6 max-w-md leading-relaxed text-sm sm:text-base">
               La plateforme immobilière de référence au Bénin. Trouvez votre chez-vous idéal 
               parmi des milliers de biens vérifiés. Achetez, louez ou investissez en toute confiance.
             </p>
 
             {/* Contact */}
-            <div className="space-y-3">
-              <a href="tel:+22954666268" className="flex items-center gap-3 text-gray-400 hover:text-luxury-gold transition">
-                <Phone size={16} className="text-luxury-gold" />
+            <div className="space-y-2.5 sm:space-y-3">
+              <a href="tel:+22954666268" className="flex items-center gap-3 text-gray-400 hover:text-luxury-gold transition text-sm sm:text-base">
+                <Phone size={15} className="text-luxury-gold flex-shrink-0" />
                 <span>+229 54 66 62 68</span>
               </a>
-              <a href="mailto:luxstay-bj@outlook.com" className="flex items-center gap-3 text-gray-400 hover:text-luxury-gold transition">
-                <Mail size={16} className="text-luxury-gold" />
+              <a href="mailto:luxstay-bj@outlook.com" className="flex items-center gap-3 text-gray-400 hover:text-luxury-gold transition text-sm sm:text-base">
+                <Mail size={15} className="text-luxury-gold flex-shrink-0" />
                 <span>luxstay-bj@outlook.com</span>
               </a>
-              <div className="flex items-start gap-3 text-gray-400">
-                <MapPin size={16} className="text-luxury-gold mt-0.5" />
+              <div className="flex items-start gap-3 text-gray-400 text-sm sm:text-base">
+                <MapPin size={15} className="text-luxury-gold mt-0.5 flex-shrink-0" />
                 <span>Haie Vive, Cotonou<br />Bénin</span>
               </div>
             </div>
@@ -100,15 +101,15 @@ export default function Footer() {
 
           {/* Colonne 2 - Navigation */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-6">Navigation</h3>
-            <ul className="space-y-3">
+            <h3 className="text-base sm:text-lg font-semibold text-white mb-4 sm:mb-6">Navigation</h3>
+            <ul className="space-y-2 sm:space-y-3">
               {footerLinks.navigation.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-gray-400 hover:text-luxury-gold transition flex items-center gap-2 group"
+                    className="text-gray-400 hover:text-luxury-gold transition flex items-center gap-2 group text-sm sm:text-base"
                   >
-                    <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition" />
+                    <ArrowRight size={13} className="opacity-0 group-hover:opacity-100 transition flex-shrink-0" />
                     {link.label}
                   </Link>
                 </li>
@@ -118,15 +119,15 @@ export default function Footer() {
 
           {/* Colonne 3 - Ressources */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-6">Ressources</h3>
-            <ul className="space-y-3">
+            <h3 className="text-base sm:text-lg font-semibold text-white mb-4 sm:mb-6">Ressources</h3>
+            <ul className="space-y-2 sm:space-y-3">
               {footerLinks.ressources.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-gray-400 hover:text-luxury-gold transition flex items-center gap-2 group"
+                    className="text-gray-400 hover:text-luxury-gold transition flex items-center gap-2 group text-sm sm:text-base"
                   >
-                    <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition" />
+                    <ArrowRight size={13} className="opacity-0 group-hover:opacity-100 transition flex-shrink-0" />
                     {link.label}
                   </Link>
                 </li>
@@ -136,15 +137,15 @@ export default function Footer() {
 
           {/* Colonne 4 - Annonceurs */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-6">Annonceurs</h3>
-            <ul className="space-y-3">
+            <h3 className="text-base sm:text-lg font-semibold text-white mb-4 sm:mb-6">Annonceurs</h3>
+            <ul className="space-y-2 sm:space-y-3">
               {footerLinks.annonceurs.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-gray-400 hover:text-luxury-gold transition flex items-center gap-2 group"
+                    className="text-gray-400 hover:text-luxury-gold transition flex items-center gap-2 group text-sm sm:text-base"
                   >
-                    <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition" />
+                    <ArrowRight size={13} className="opacity-0 group-hover:opacity-100 transition flex-shrink-0" />
                     {link.label}
                   </Link>
                 </li>
@@ -152,7 +153,7 @@ export default function Footer() {
             </ul>
 
             {/* Réseaux sociaux */}
-            <div className="flex gap-3 mt-6">
+            <div className="flex gap-2.5 sm:gap-3 mt-5 sm:mt-6">
               {[
                 { icon: <FacebookIcon />, href: '#', label: 'Facebook' },
                 { icon: <InstagramIcon />, href: '#', label: 'Instagram' },
@@ -163,7 +164,7 @@ export default function Footer() {
                   key={index}
                   href={social.href}
                   aria-label={social.label}
-                  className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-gray-400 hover:bg-luxury-gold hover:text-luxury-green-dark transition"
+                  className="w-9 h-9 sm:w-10 sm:h-10 bg-white/10 rounded-xl flex items-center justify-center text-gray-400 hover:bg-luxury-gold hover:text-luxury-green-dark transition"
                 >
                   {social.icon}
                 </a>
@@ -175,11 +176,11 @@ export default function Footer() {
 
       {/* Barre du bas */}
       <div className="border-t border-white/10">
-        <div className="container mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-gray-500 text-sm text-center sm:text-left">
+        <div className="container mx-auto px-4 py-5 sm:py-6 max-w-7xl 2xl:max-w-[1400px] flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+          <p className="text-gray-500 text-xs sm:text-sm text-center sm:text-left order-2 sm:order-1">
             © {new Date().getFullYear()} LuxStay. Tous droits réservés.
           </p>
-          <div className="flex items-center gap-6 text-sm text-gray-500">
+          <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-500 order-1 sm:order-2">
             <Link href="/mentions-legales" className="hover:text-luxury-gold transition">
               Mentions légales
             </Link>
@@ -190,8 +191,8 @@ export default function Footer() {
               CGU
             </Link>
           </div>
-          <p className="text-gray-500 text-sm flex items-center gap-1 flex-wrap justify-center">
-            Made with <Heart size={14} className="text-red-500 fill-red-500 flex-shrink-0" /> by{' '}
+          <p className="text-gray-500 text-xs sm:text-sm flex items-center gap-1 flex-wrap justify-center order-3">
+            Made with <Heart size={12} className="sm:size-[14px] text-red-500 fill-red-500 flex-shrink-0" /> by{' '}
             <a
               href="https://www.linkedin.com/in/kellyjosueakplogan"
               target="_blank"
