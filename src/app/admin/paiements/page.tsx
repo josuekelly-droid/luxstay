@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Search, CheckCircle, XCircle, Clock, DollarSign } from 'lucide-react';
+import { Loader2, Search, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 interface Paiement {
   id: string;
@@ -73,29 +73,29 @@ export default function AdminPaiementsPage() {
       </div>
 
       {/* Stats rapides */}
-      <div className="grid sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl shadow-card p-6">
-          <p className="text-sm text-gray-500">Revenus totaux</p>
-          <p className="text-2xl font-bold text-luxury-green">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="bg-white rounded-2xl shadow-card p-4 sm:p-6">
+          <p className="text-xs sm:text-sm text-gray-500">Revenus totaux</p>
+          <p className="text-xl sm:text-2xl font-bold text-luxury-green">
             {totalRevenus.toLocaleString('fr-FR')} FCFA
           </p>
         </div>
-        <div className="bg-white rounded-2xl shadow-card p-6">
-          <p className="text-sm text-gray-500">Transactions réussies</p>
-          <p className="text-2xl font-bold text-green-600">
+        <div className="bg-white rounded-2xl shadow-card p-4 sm:p-6">
+          <p className="text-xs sm:text-sm text-gray-500">Réussies</p>
+          <p className="text-xl sm:text-2xl font-bold text-green-600">
             {paiements.filter(p => p.statut === 'COMPLETE').length}
           </p>
         </div>
-        <div className="bg-white rounded-2xl shadow-card p-6">
-          <p className="text-sm text-gray-500">En attente</p>
-          <p className="text-2xl font-bold text-yellow-600">
+        <div className="bg-white rounded-2xl shadow-card p-4 sm:p-6">
+          <p className="text-xs sm:text-sm text-gray-500">En attente</p>
+          <p className="text-xl sm:text-2xl font-bold text-yellow-600">
             {paiements.filter(p => p.statut === 'EN_ATTENTE').length}
           </p>
         </div>
       </div>
 
       {/* Filtres */}
-      <div className="bg-white rounded-2xl shadow-card p-4 flex flex-col sm:flex-row gap-4">
+      <div className="bg-white rounded-2xl shadow-card p-3 sm:p-4 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -103,11 +103,11 @@ export default function AdminPaiementsPage() {
             placeholder="Rechercher..."
             value={recherche}
             onChange={(e) => setRecherche(e.target.value)}
-            className="input-luxury pl-10"
+            className="input-luxury pl-10 text-sm"
           />
         </div>
-        <select value={filtre} onChange={(e) => setFiltre(e.target.value)} className="input-luxury w-auto">
-          <option value="tous">Tous</option>
+        <select value={filtre} onChange={(e) => setFiltre(e.target.value)} className="input-luxury w-full sm:w-auto text-sm">
+          <option value="tous">Tous les statuts</option>
           <option value="COMPLETE">Complétés</option>
           <option value="EN_ATTENTE">En attente</option>
           <option value="ECHOUE">Échoués</option>
@@ -115,37 +115,69 @@ export default function AdminPaiementsPage() {
         </select>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl shadow-card overflow-hidden">
+      {/* Vue Cartes Mobile */}
+      <div className="lg:hidden space-y-3">
+        {paiementsFiltres.map((p) => (
+          <div key={p.id} className="bg-white rounded-2xl shadow-card p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                p.statut === 'COMPLETE' ? 'bg-green-100 text-green-700' :
+                p.statut === 'EN_ATTENTE' ? 'bg-yellow-100 text-yellow-700' :
+                'bg-red-100 text-red-700'
+              }`}>
+                {p.statut === 'COMPLETE' ? '✅ Complété' : p.statut === 'EN_ATTENTE' ? '⏳ En attente' : '❌ Échoué'}
+              </span>
+              <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">{p.modePaiement}</span>
+            </div>
+
+            <div className="flex items-center justify-between mb-2">
+              <p className="font-semibold text-luxury-green text-lg">
+                {p.montant.toLocaleString('fr-FR')} {p.devise}
+              </p>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-1">{p.user.prenom} {p.user.nom}</p>
+            <p className="text-xs text-gray-400 mb-2 truncate">{p.user.email}</p>
+
+            <div className="flex items-center justify-between text-xs text-gray-400">
+              <span className="font-mono truncate max-w-[150px]">{p.reference}</span>
+              <span>{p.datePaiement ? new Date(p.datePaiement).toLocaleDateString('fr-FR') : '-'}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Table Desktop */}
+      <div className="hidden lg:block bg-white rounded-2xl shadow-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[700px]">
             <thead>
               <tr className="bg-luxury-sand-light text-left">
-                <th className="p-4 text-sm font-semibold">Référence</th>
-                <th className="p-4 text-sm font-semibold">Utilisateur</th>
-                <th className="p-4 text-sm font-semibold">Montant</th>
-                <th className="p-4 text-sm font-semibold">Mode</th>
-                <th className="p-4 text-sm font-semibold">Statut</th>
-                <th className="p-4 text-sm font-semibold">Date</th>
+                <th className="p-4 text-sm font-semibold text-luxury-green-dark whitespace-nowrap">Référence</th>
+                <th className="p-4 text-sm font-semibold text-luxury-green-dark whitespace-nowrap">Utilisateur</th>
+                <th className="p-4 text-sm font-semibold text-luxury-green-dark whitespace-nowrap">Montant</th>
+                <th className="p-4 text-sm font-semibold text-luxury-green-dark whitespace-nowrap">Mode</th>
+                <th className="p-4 text-sm font-semibold text-luxury-green-dark whitespace-nowrap">Statut</th>
+                <th className="p-4 text-sm font-semibold text-luxury-green-dark whitespace-nowrap">Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {paiementsFiltres.map((p) => (
                 <tr key={p.id} className="hover:bg-gray-50 transition">
                   <td className="p-4">
-                    <p className="text-sm font-mono text-gray-600 truncate max-w-[150px]">{p.reference}</p>
+                    <p className="text-xs font-mono text-gray-500 truncate max-w-[130px]">{p.reference}</p>
                   </td>
                   <td className="p-4">
                     <p className="font-medium text-sm">{p.user.prenom} {p.user.nom}</p>
-                    <p className="text-xs text-gray-400">{p.user.email}</p>
+                    <p className="text-xs text-gray-400 truncate max-w-[180px]">{p.user.email}</p>
                   </td>
-                  <td className="p-4 font-semibold text-sm">
+                  <td className="p-4 font-semibold text-sm whitespace-nowrap">
                     {p.montant.toLocaleString('fr-FR')} {p.devise}
                   </td>
-                  <td className="p-4">
+                  <td className="p-4 whitespace-nowrap">
                     <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">{p.modePaiement}</span>
                   </td>
-                  <td className="p-4">
+                  <td className="p-4 whitespace-nowrap">
                     {p.statut === 'COMPLETE' && (
                       <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle size={14} /> Complété</span>
                     )}
@@ -156,7 +188,7 @@ export default function AdminPaiementsPage() {
                       <span className="text-xs text-red-600 flex items-center gap-1"><XCircle size={14} /> Échoué</span>
                     )}
                   </td>
-                  <td className="p-4 text-sm text-gray-500">
+                  <td className="p-4 text-sm text-gray-500 whitespace-nowrap">
                     {p.datePaiement ? new Date(p.datePaiement).toLocaleDateString('fr-FR') : '-'}
                   </td>
                 </tr>
