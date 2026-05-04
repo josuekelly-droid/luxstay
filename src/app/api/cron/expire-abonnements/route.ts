@@ -11,32 +11,33 @@ export async function GET(request: Request) {
     }
 
     const maintenant = new Date();
-    let compteur = 0;
+    let compteurAbonnements = 0;
+    let compteurBoosts = 0;
 
-    // Trouver tous les abonnements payants expirés mais encore marqués "actif"
+    // ==========================================
+    // 1. GÉRER LES ABONNEMENTS EXPIRÉS
+    // ==========================================
     const abonnementsExpires = await prisma.abonnement.findMany({
       where: {
         actif: true,
         fin: { lt: maintenant },
-        plan: { not: 'GRATUIT' }, // On ne touche pas aux gratuits
+        plan: { not: 'GRATUIT' },
       },
       include: {
-        user: {
-          select: { email: true },
-        },
+        user: { select: { email: true } },
       },
     });
 
     console.log(`🔍 ${abonnementsExpires.length} abonnement(s) expiré(s) trouvé(s)`);
 
     for (const abo of abonnementsExpires) {
-      // 1. Désactiver l'ancien abonnement
+      // Désactiver l'ancien abonnement
       await prisma.abonnement.update({
         where: { id: abo.id },
         data: { actif: false },
       });
 
-      // 2. Créer un abonnement gratuit par défaut
+      // Créer un abonnement gratuit par défaut
       await prisma.abonnement.create({
         data: {
           userId: abo.userId,
@@ -50,14 +51,52 @@ export async function GET(request: Request) {
         },
       });
 
-      compteur++;
+      compteurAbonnements++;
       console.log(`✅ Abonnement ${abo.plan} expiré pour ${abo.user.email} → GRATUIT`);
+    }
+
+    // ==========================================
+    // 2. DÉSACTIVER LES BOOSTS EXPIRÉS
+    // ==========================================
+    const boostsExpires = await prisma.annonce.findMany({
+      where: {
+        OR: [
+          { boost: true },
+          { epinglee: true },
+          { prioritaire: true },
+        ],
+        dateExpiration: { lt: maintenant },
+      },
+      select: { id: true, titre: true, boost: true, epinglee: true, prioritaire: true },
+    });
+
+    console.log(`🔍 ${boostsExpires.length} boost(s) expiré(s) trouvé(s)`);
+
+    for (const annonce of boostsExpires) {
+      const typesExpires = [];
+      if (annonce.boost) typesExpires.push('Boost');
+      if (annonce.epinglee) typesExpires.push('Épinglée');
+      if (annonce.prioritaire) typesExpires.push('Prioritaire');
+
+      await prisma.annonce.update({
+        where: { id: annonce.id },
+        data: {
+          boost: false,
+          epinglee: false,
+          prioritaire: false,
+          dateExpiration: null,
+        },
+      });
+
+      compteurBoosts++;
+      console.log(`✅ Boost expiré pour "${annonce.titre}" → ${typesExpires.join(', ')} désactivé(s)`);
     }
 
     return NextResponse.json({
       success: true,
-      expires: compteur,
-      message: `${compteur} abonnement(s) expiré(s) et remplacé(s) par GRATUIT`,
+      abonnementsExpires: compteurAbonnements,
+      boostsExpires: compteurBoosts,
+      message: `${compteurAbonnements} abonnement(s) et ${compteurBoosts} boost(s) traités`,
     });
   } catch (error) {
     console.error('Erreur cron expiration:', error);
