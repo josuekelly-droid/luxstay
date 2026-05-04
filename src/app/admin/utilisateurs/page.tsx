@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Loader2, Ban, CheckCircle, Mail } from 'lucide-react';
+import { Search, Loader2, Ban, CheckCircle, Mail, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Utilisateur {
@@ -25,6 +25,7 @@ export default function AdminUtilisateursPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [recherche, setRecherche] = useState('');
   const [filtreRole, setFiltreRole] = useState('tous');
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUtilisateurs();
@@ -60,6 +61,36 @@ export default function AdminUtilisateursPage() {
       }
     } catch (error) {
       toast.error('Erreur');
+    }
+  };
+
+  const handleSupprimer = async (id: string, nom: string) => {
+    if (!confirm(`⚠️ Supprimer définitivement ${nom} ?\n\nCette action est IRRÉVERSIBLE. Toutes ses annonces, messages et données seront effacés.`)) {
+      return;
+    }
+
+    // Double confirmation
+    if (!confirm('Confirmez-vous vraiment la suppression ?')) {
+      return;
+    }
+
+    setDeleteId(id);
+    try {
+      const response = await fetch(`/api/admin/utilisateurs/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setUtilisateurs(prev => prev.filter(u => u.id !== id));
+        toast.success('Utilisateur supprimé définitivement');
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Erreur lors de la suppression');
+      }
+    } catch (error) {
+      toast.error('Erreur');
+    } finally {
+      setDeleteId(null);
     }
   };
 
@@ -152,16 +183,31 @@ export default function AdminUtilisateursPage() {
               </span>
             </div>
 
-            <button
-              onClick={() => handleBloquer(user.id, user.bloque)}
-              className={`w-full py-2 rounded-lg text-xs font-medium transition ${
-                user.bloque
-                  ? 'bg-green-50 text-green-600 hover:bg-green-100'
-                  : 'bg-red-50 text-red-600 hover:bg-red-100'
-              }`}
-            >
-              {user.bloque ? 'Débloquer le compte' : 'Bloquer le compte'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleBloquer(user.id, user.bloque)}
+                className={`flex-1 py-2 rounded-lg text-xs font-medium transition ${
+                  user.bloque
+                    ? 'bg-green-50 text-green-600 hover:bg-green-100'
+                    : 'bg-red-50 text-red-600 hover:bg-red-100'
+                }`}
+              >
+                {user.bloque ? 'Débloquer' : 'Bloquer'}
+              </button>
+              {user.role !== 'ADMIN' && (
+                <button
+                  onClick={() => handleSupprimer(user.id, `${user.prenom} ${user.nom}`)}
+                  disabled={deleteId === user.id}
+                  className="px-3 py-2 rounded-lg text-xs font-medium bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600 transition disabled:opacity-50"
+                >
+                  {deleteId === user.id ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Trash2 size={14} />
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -169,7 +215,7 @@ export default function AdminUtilisateursPage() {
       {/* Table Desktop */}
       <div className="hidden lg:block bg-white rounded-2xl shadow-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px]">
+          <table className="w-full min-w-[750px]">
             <thead>
               <tr className="bg-luxury-sand-light text-left">
                 <th className="p-4 text-sm font-semibold text-luxury-green-dark whitespace-nowrap">Utilisateur</th>
@@ -217,16 +263,32 @@ export default function AdminUtilisateursPage() {
                     {new Date(user.dateInscription).toLocaleDateString('fr-FR')}
                   </td>
                   <td className="p-4 whitespace-nowrap">
-                    <button
-                      onClick={() => handleBloquer(user.id, user.bloque)}
-                      className={`px-3 py-1.5 rounded-lg transition text-xs font-medium ${
-                        user.bloque
-                          ? 'text-green-600 hover:bg-green-50'
-                          : 'text-red-600 hover:bg-red-50'
-                      }`}
-                    >
-                      {user.bloque ? 'Débloquer' : 'Bloquer'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleBloquer(user.id, user.bloque)}
+                        className={`px-3 py-1.5 rounded-lg transition text-xs font-medium ${
+                          user.bloque
+                            ? 'text-green-600 hover:bg-green-50'
+                            : 'text-red-600 hover:bg-red-50'
+                        }`}
+                      >
+                        {user.bloque ? 'Débloquer' : 'Bloquer'}
+                      </button>
+                      {user.role !== 'ADMIN' && (
+                        <button
+                          onClick={() => handleSupprimer(user.id, `${user.prenom} ${user.nom}`)}
+                          disabled={deleteId === user.id}
+                          className="px-3 py-1.5 rounded-lg transition text-xs font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                          title="Supprimer définitivement"
+                        >
+                          {deleteId === user.id ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Trash2 size={14} />
+                          )}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
