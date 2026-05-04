@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PlusCircle, Search, Filter, Eye, Edit, Trash2, Loader2 } from 'lucide-react';
+import { PlusCircle, Search, Filter, Eye, Edit, Trash2, Loader2, TrendingUp } from 'lucide-react';
 import { BadgeStatut, BadgeBoost } from '@/components/ui/Badges';
 import toast from 'react-hot-toast';
 
@@ -115,11 +115,6 @@ export default function MesAnnoncesPage() {
           <h2 className="text-2xl font-bold text-luxury-green-dark">Mes annonces</h2>
           <p className="text-gray-500 text-sm mt-1">
             {annonces.length} annonce{annonces.length > 1 ? 's' : ''} au total
-            {(sessionStorage.getItem('plan') === 'GRATUIT' || true) && (
-              <span className="ml-2 text-luxury-gold-dark">
-                • {5 - annonces.filter(a => a.statut === 'PUBLIEE' || a.statut === 'EN_ATTENTE').length} restante(s) ce mois
-              </span>
-            )}
           </p>
         </div>
         <Link
@@ -282,6 +277,15 @@ export default function MesAnnoncesPage() {
                         title="Modifier l'annonce"
                       >
                         <Edit size={18} />
+                      </Link>
+
+                      {/* Booster */}
+                      <Link
+                        href={`/dashboard/annonces/boost/${annonce.id}`}
+                        className="p-2 rounded-lg hover:bg-luxury-gold/10 transition text-luxury-gold"
+                        title="Booster l'annonce"
+                      >
+                        <TrendingUp size={18} />
                       </Link>
 
                       {/* Supprimer */}

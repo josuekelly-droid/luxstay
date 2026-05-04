@@ -41,23 +41,32 @@ export async function GET(request: Request) {
       ];
     }
 
-    // Tri
-    let orderBy: any = { createdAt: 'desc' };
+    // Tri par défaut : boostés en premier, puis selon le choix utilisateur
+    let orderBy: any[] = [
+      { prioritaire: 'desc' },
+      { epinglee: 'desc' },
+      { boost: 'desc' },
+    ];
+
+    // Ajouter le tri utilisateur après les boosts
     switch (tri) {
       case 'prix_asc':
-        orderBy = { prix: 'asc' };
+        orderBy.push({ prix: 'asc' });
         break;
       case 'prix_desc':
-        orderBy = { prix: 'desc' };
+        orderBy.push({ prix: 'desc' });
         break;
       case 'surface_asc':
-        orderBy = { surface: 'asc' };
+        orderBy.push({ surface: 'asc' });
         break;
       case 'surface_desc':
-        orderBy = { surface: 'desc' };
+        orderBy.push({ surface: 'desc' });
         break;
       case 'vues':
-        orderBy = { vues: 'desc' };
+        orderBy.push({ vues: 'desc' });
+        break;
+      default:
+        orderBy.push({ createdAt: 'desc' });
         break;
     }
 
