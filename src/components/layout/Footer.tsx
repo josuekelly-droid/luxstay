@@ -190,8 +190,17 @@ export default function Footer() {
               CGU
             </Link>
           </div>
-          <p className="text-gray-500 text-sm flex items-center gap-1">
-            Made with <Heart size={14} className="text-red-500 fill-red-500" /> in Bénin
+          <p className="text-gray-500 text-sm flex items-center gap-1 flex-wrap justify-center">
+            Made with <Heart size={14} className="text-red-500 fill-red-500 flex-shrink-0" /> by{' '}
+            <a
+              href="https://www.linkedin.com/in/kellyjosueakplogan"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-luxury-gold font-medium hover:underline"
+            >
+              Kelly Josué AKPLOGAN
+            </a>{' '}
+            in Bénin
           </p>
         </div>
       </div>
