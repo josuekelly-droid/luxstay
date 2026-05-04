@@ -81,6 +81,15 @@ export async function GET(request: Request) {
           where: { principale: true },
           take: 1,
         },
+        user: {
+          select: {
+            abonnements: {
+              where: { actif: true },
+              select: { plan: true },
+              take: 1,
+            },
+          },
+        },
         _count: {
           select: { favoris: true },
         },

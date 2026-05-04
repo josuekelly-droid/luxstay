@@ -9,6 +9,7 @@ import { useSession } from 'next-auth/react';
 import {
   MapPin, Bed, Bath, Maximize, Heart, Share2, Phone,
   Check, ArrowLeft, Loader2, Eye, Send, Flag, MessageSquare,
+  CheckCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -42,6 +43,7 @@ interface AnnonceDetail {
     prenom: string;
     telephone: string;
     email: string;
+    abonnements?: { plan: string }[];
   };
 }
 
@@ -205,6 +207,10 @@ export default function BienDetailPage() {
 
   const formatPrix = (prix: number) => new Intl.NumberFormat('fr-FR').format(Math.round(prix));
 
+  // Déterminer si l'annonceur est vérifié
+  const planActuel = annonce?.user?.abonnements?.[0]?.plan;
+  const estVerifie = planActuel === 'PREMIUM' || planActuel === 'BUSINESS';
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-luxury-sand-light">
@@ -256,6 +262,13 @@ export default function BienDetailPage() {
                     {annonce.transaction === 'VENTE' ? 'À vendre' : 'À louer'}
                   </span>
                 </div>
+                {estVerifie && (
+                  <div className="absolute top-4 right-4">
+                    <span className="bg-green-500 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1">
+                      <CheckCircle size={12} /> Vérifié
+                    </span>
+                  </div>
+                )}
               </div>
               {annonce.images.length > 1 && (
                 <div className="p-4 flex gap-3 overflow-x-auto">
@@ -338,8 +351,17 @@ export default function BienDetailPage() {
                   {annonce.user.prenom?.charAt(0)}{annonce.user.nom?.charAt(0)}
                 </div>
                 <div>
-                  <p className="font-semibold text-luxury-green-dark">{annonce.user.prenom} {annonce.user.nom}</p>
-                  <p className="text-sm text-gray-500">Annonceur</p>
+                  <p className="font-semibold text-luxury-green-dark flex items-center gap-2">
+                    {annonce.user.prenom} {annonce.user.nom}
+                    {estVerifie && (
+                      <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <CheckCircle size={10} /> Vérifié
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {estVerifie ? 'Annonceur vérifié' : 'Annonceur'}
+                  </p>
                 </div>
               </div>
 

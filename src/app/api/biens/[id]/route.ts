@@ -17,11 +17,16 @@ export async function GET(
         },
         user: {
           select: {
-            id: true,        // ✅ AJOUTÉ
+            id: true,
             nom: true,
             prenom: true,
             telephone: true,
             email: true,
+            abonnements: {
+              where: { actif: true },
+              select: { plan: true },
+              take: 1,
+            },
           },
         },
       },
