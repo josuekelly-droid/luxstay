@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/db';
 
+// PUT - Bloquer/Débloquer un utilisateur
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -84,7 +85,31 @@ export async function DELETE(
       );
     }
 
-    // Supprimer l'utilisateur (CASCADE supprime automatiquement : annonces, images, messages, favoris, abonnements, paiements, notifications, sessions)
+    // Supprimer dans l'ordre pour éviter les contraintes de clé étrangère
+    await prisma.$transaction([
+      // 1. Favoris
+      prisma.favori.deleteMany({ where: { userId: id } }),
+      // 2. Images (via annonces)
+      prisma.image.deleteMany({ where: { annonce: { userId: id } } }),
+      // 3. Annonces
+      prisma.annonce.deleteMany({ where: { userId: id } }),
+      // 4. Messages
+      prisma.message.deleteMany({
+        where: { OR: [{ expediteurId: id }, { destinataireId: id }] },
+      }),
+      // 5. Notifications
+      prisma.notification.deleteMany({ where: { userId: id } }),
+      // 6. Paiements
+      prisma.paiement.deleteMany({ where: { userId: id } }),
+      // 7. Abonnements
+      prisma.abonnement.deleteMany({ where: { userId: id } }),
+      // 8. Sessions
+      prisma.session.deleteMany({ where: { userId: id } }),
+      // 9. Signalements
+      prisma.signalement.deleteMany({ where: { userId: id } }),
+    ]);
+
+    // Enfin, supprimer l'utilisateur
     await prisma.user.delete({
       where: { id },
     });
@@ -93,10 +118,10 @@ export async function DELETE(
       success: true,
       message: 'Utilisateur supprimé définitivement avec toutes ses données',
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erreur suppression utilisateur:', error);
     return NextResponse.json(
-      { error: 'Erreur lors de la suppression' },
+      { error: error?.message || 'Erreur lors de la suppression' },
       { status: 500 }
     );
   }
