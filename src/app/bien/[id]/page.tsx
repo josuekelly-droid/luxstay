@@ -9,7 +9,7 @@ import { useSession } from 'next-auth/react';
 import {
   MapPin, Bed, Bath, Maximize, Heart, Share2, Phone,
   Check, ArrowLeft, Loader2, Eye, Send, Flag, MessageSquare,
-  CheckCircle,
+  CheckCircle, Home,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -359,6 +359,12 @@ export default function BienDetailPage() {
                   <p className="text-xs sm:text-sm text-gray-500">
                     {estVerifie ? 'Annonceur vérifié' : 'Annonceur'}
                   </p>
+                  <Link
+                    href={`/annonceur/${annonce.user.id}`}
+                    className="text-xs text-luxury-green hover:underline flex items-center gap-1 mt-1"
+                  >
+                    <Home size={12} /> Voir toutes ses annonces
+                  </Link>
                 </div>
               </div>
 
