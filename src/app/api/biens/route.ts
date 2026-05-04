@@ -16,7 +16,10 @@ export async function GET(request: Request) {
     const chambres = searchParams.get('chambres') || '';
     const surfaceMin = searchParams.get('surfaceMin') || '';
     const tri = searchParams.get('tri') || 'recent';
-    const recherche = searchParams.get('recherche') || '';
+    const rechercheBrute = searchParams.get('recherche') || '';
+
+    // Nettoyer la recherche : garder uniquement lettres, chiffres, espaces, accents et tirets
+    const recherche = rechercheBrute.replace(/[^a-zA-Z0-9À-ÿ\s-]/g, '').trim();
 
     // Construire les filtres
     const where: any = {

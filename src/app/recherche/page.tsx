@@ -97,6 +97,10 @@ function RechercheContent() {
   const formatPrix = (prix: number) => new Intl.NumberFormat('fr-FR').format(Math.round(prix));
 
   const handleChange = (field: string, value: string) => {
+    // Nettoyer les caractères spéciaux pour le champ recherche
+    if (field === 'recherche') {
+      value = value.replace(/[^a-zA-Z0-9À-ÿ\s-]/g, '');
+    }
     setFiltres(prev => ({ ...prev, [field]: value }));
     setPage(1);
   };
