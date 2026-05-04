@@ -16,13 +16,13 @@ export default function AdminParametresPage() {
   const [config, setConfig] = useState({
     fraisService: '0',
     annoncesGratuites: '5',
+    photosParAnnonce: '5',
     dureeValidation: '48',
     emailContact: 'contact@luxstay.bj',
     telephone: '+229 97 00 00 00',
     maintenance: false,
   });
 
-  // Profil admin
   const [profil, setProfil] = useState({
     nom: '',
     prenom: '',
@@ -62,7 +62,6 @@ export default function AdminParametresPage() {
     } catch (error) {}
   };
 
-  // Sauvegarder la configuration
   const handleSaveConfig = async () => {
     setIsSaving(true);
     try {
@@ -83,7 +82,6 @@ export default function AdminParametresPage() {
     }
   };
 
-  // Mettre à jour le profil admin
   const handleSaveProfil = async () => {
     setIsSaving(true);
     try {
@@ -109,7 +107,6 @@ export default function AdminParametresPage() {
     }
   };
 
-  // Changer le mot de passe
   const handleChangePassword = async () => {
     if (password.new !== password.confirm) {
       toast.error('Les mots de passe ne correspondent pas');
@@ -225,6 +222,7 @@ export default function AdminParametresPage() {
         <h3 className="font-display text-lg font-bold text-luxury-green-dark flex items-center gap-2">
           <Settings size={20} /> Configuration plateforme
         </h3>
+
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="text-sm text-gray-600 mb-1 block">Frais de service (%)</label>
@@ -235,10 +233,18 @@ export default function AdminParametresPage() {
             <input type="number" value={config.annoncesGratuites} onChange={(e) => setConfig({...config, annoncesGratuites: e.target.value})} className="input-luxury" />
           </div>
         </div>
-        <div>
-          <label className="text-sm text-gray-600 mb-1 block">Délai validation (heures)</label>
-          <input type="number" value={config.dureeValidation} onChange={(e) => setConfig({...config, dureeValidation: e.target.value})} className="input-luxury" />
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm text-gray-600 mb-1 block">Photos par annonce (gratuit)</label>
+            <input type="number" value={config.photosParAnnonce} onChange={(e) => setConfig({...config, photosParAnnonce: e.target.value})} className="input-luxury" />
+          </div>
+          <div>
+            <label className="text-sm text-gray-600 mb-1 block">Délai validation (heures)</label>
+            <input type="number" value={config.dureeValidation} onChange={(e) => setConfig({...config, dureeValidation: e.target.value})} className="input-luxury" />
+          </div>
         </div>
+
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="text-sm text-gray-600 mb-1 block">Email contact</label>
@@ -249,10 +255,12 @@ export default function AdminParametresPage() {
             <input type="tel" value={config.telephone} onChange={(e) => setConfig({...config, telephone: e.target.value})} className="input-luxury" />
           </div>
         </div>
+
         <label className="flex items-center gap-3 cursor-pointer">
           <input type="checkbox" checked={config.maintenance} onChange={(e) => setConfig({...config, maintenance: e.target.checked})} className="w-5 h-5 text-luxury-green rounded" />
           <span className="text-sm">Mode maintenance</span>
         </label>
+
         <button onClick={handleSaveConfig} disabled={isSaving} className="btn-primary flex items-center gap-2">
           {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
           Enregistrer la configuration

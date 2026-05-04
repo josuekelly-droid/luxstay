@@ -34,6 +34,18 @@ export async function POST(request: Request) {
     }
 
     // ==========================================
+    // RÉCUPÉRER LA CONFIGURATION DYNAMIQUE
+    // ==========================================
+
+    const [configAnnonces, configPhotos] = await Promise.all([
+      prisma.configuration.findUnique({ where: { cle: 'annoncesGratuites' } }),
+      prisma.configuration.findUnique({ where: { cle: 'photosParAnnonce' } }),
+    ]);
+
+    const annoncesGratuites = parseInt(configAnnonces?.valeur || '5');
+    const photosGratuites = parseInt(configPhotos?.valeur || '5');
+
+    // ==========================================
     // VÉRIFICATION ET GESTION DE L'ABONNEMENT
     // ==========================================
 
@@ -44,13 +56,11 @@ export async function POST(request: Request) {
 
     // 2. Vérifier si l'abonnement a expiré
     if (abonnement && new Date() > new Date(abonnement.fin)) {
-      // Désactiver l'abonnement expiré
       await prisma.abonnement.update({
         where: { id: abonnement.id },
         data: { actif: false },
       });
 
-      // Créer automatiquement un abonnement gratuit
       abonnement = await prisma.abonnement.create({
         data: {
           userId,
@@ -58,8 +68,8 @@ export async function POST(request: Request) {
           duree: 'MENSUEL',
           debut: new Date(),
           fin: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          annoncesMax: 5,
-          photosParAnnonce: 5,
+          annoncesMax: annoncesGratuites,
+          photosParAnnonce: photosGratuites,
           annoncesUtilisees: 0,
         },
       });
@@ -74,8 +84,8 @@ export async function POST(request: Request) {
           duree: 'MENSUEL',
           debut: new Date(),
           fin: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          annoncesMax: 5,
-          photosParAnnonce: 5,
+          annoncesMax: annoncesGratuites,
+          photosParAnnonce: photosGratuites,
           annoncesUtilisees: 0,
         },
       });
