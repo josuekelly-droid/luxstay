@@ -207,7 +207,6 @@ export default function BienDetailPage() {
 
   const formatPrix = (prix: number) => new Intl.NumberFormat('fr-FR').format(Math.round(prix));
 
-  // Déterminer si l'annonceur est vérifié
   const planActuel = annonce?.user?.abonnements?.[0]?.plan;
   const estVerifie = planActuel === 'PREMIUM' || planActuel === 'BUSINESS';
 
@@ -229,19 +228,19 @@ export default function BienDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-luxury-sand-light pt-24 pb-16">
-      <div className="container mx-auto px-4">
+    <main className="min-h-screen bg-luxury-sand-light pt-20 sm:pt-24 pb-16">
+      <div className="container mx-auto px-3 sm:px-4 max-w-7xl">
         {/* Bouton retour */}
         <button
           onClick={() => router.back()}
-          className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-luxury-green mb-6 transition"
+          className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-luxury-green mb-4 sm:mb-6 transition"
         >
           <ArrowLeft size={18} /> Retour aux résultats
         </button>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Colonne gauche - Images et détails */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6 order-2 lg:order-1">
             {/* Galerie images */}
             <div className="bg-white rounded-2xl shadow-card overflow-hidden">
               <div className="relative aspect-video bg-gray-100">
@@ -257,26 +256,26 @@ export default function BienDetailPage() {
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">Aucune image</div>
                 )}
-                <div className="absolute top-4 left-4">
-                  <span className="bg-luxury-green text-white text-sm px-3 py-1 rounded-full">
+                <div className="absolute top-3 sm:top-4 left-3 sm:left-4 flex gap-2">
+                  <span className="bg-luxury-green text-white text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full">
                     {annonce.transaction === 'VENTE' ? 'À vendre' : 'À louer'}
                   </span>
                 </div>
                 {estVerifie && (
-                  <div className="absolute top-4 right-4">
-                    <span className="bg-green-500 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1">
+                  <div className="absolute top-3 sm:top-4 right-3 sm:right-4">
+                    <span className="bg-green-500 text-white text-[10px] sm:text-xs px-2 sm:px-3 py-1 rounded-full flex items-center gap-1">
                       <CheckCircle size={12} /> Vérifié
                     </span>
                   </div>
                 )}
               </div>
               {annonce.images.length > 1 && (
-                <div className="p-4 flex gap-3 overflow-x-auto">
+                <div className="p-3 sm:p-4 flex gap-2 sm:gap-3 overflow-x-auto">
                   {annonce.images.map((img, index) => (
                     <button
                       key={img.id}
                       onClick={() => setImageActive(index)}
-                      className={`relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border-2 transition ${index === imageActive ? 'border-luxury-gold' : 'border-transparent'}`}
+                      className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden flex-shrink-0 border-2 transition ${index === imageActive ? 'border-luxury-gold' : 'border-transparent'}`}
                     >
                       <Image src={img.url} alt={`Image ${index + 1}`} fill sizes="80px" className="object-cover" />
                     </button>
@@ -286,11 +285,13 @@ export default function BienDetailPage() {
             </div>
 
             {/* Détails */}
-            <div className="bg-white rounded-2xl shadow-card p-6 space-y-6">
+            <div className="bg-white rounded-2xl shadow-card p-4 sm:p-6 space-y-4 sm:space-y-6">
               <div>
-                <div className="flex items-start justify-between gap-4 mb-3">
-                  <h1 className="font-display text-2xl lg:text-3xl font-bold text-luxury-green-dark">{annonce.titre}</h1>
-                  <div className="flex gap-2">
+                <div className="flex items-start justify-between gap-2 sm:gap-4 mb-3">
+                  <h1 className="font-display text-xl sm:text-2xl lg:text-3xl font-bold text-luxury-green-dark break-words">
+                    {annonce.titre}
+                  </h1>
+                  <div className="flex gap-1 sm:gap-2 flex-shrink-0">
                     <button onClick={handleToggleFavori} className="p-2 rounded-xl hover:bg-gray-100 transition">
                       <Heart size={20} className={isFavori ? 'fill-red-500 text-red-500' : 'text-gray-400'} />
                     </button>
@@ -299,30 +300,30 @@ export default function BienDetailPage() {
                     </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-gray-500 mb-4">
-                  <MapPin size={18} className="text-luxury-gold" />
+                <div className="flex items-center gap-2 text-gray-500 mb-4 text-sm sm:text-base">
+                  <MapPin size={18} className="text-luxury-gold flex-shrink-0" />
                   <span>{annonce.quartier}, {annonce.ville}</span>
                 </div>
-                <div className="text-3xl font-bold text-luxury-green mb-4">
+                <div className="text-2xl sm:text-3xl font-bold text-luxury-green mb-4">
                   {formatPrix(annonce.prix)} FCFA
-                  {annonce.transaction === 'LOCATION' && <span className="text-lg font-normal text-gray-500">/mois</span>}
+                  {annonce.transaction === 'LOCATION' && <span className="text-base sm:text-lg font-normal text-gray-500">/mois</span>}
                 </div>
-                <div className="flex items-center gap-6 text-gray-600">
-                  {annonce.chambres && <div className="flex items-center gap-2"><Bed size={20} /> <span>{annonce.chambres} chambres</span></div>}
+                <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-gray-600 text-sm sm:text-base">
+                  {annonce.chambres && <div className="flex items-center gap-2"><Bed size={20} /> <span>{annonce.chambres} ch.</span></div>}
                   {annonce.sallesBain && <div className="flex items-center gap-2"><Bath size={20} /> <span>{annonce.sallesBain} sdb</span></div>}
                   {annonce.surface && <div className="flex items-center gap-2"><Maximize size={20} /> <span>{annonce.surface} m²</span></div>}
                 </div>
               </div>
 
-              <div className="pt-6 border-t">
-                <h2 className="font-display text-xl font-bold text-luxury-green-dark mb-3">Description</h2>
-                <p className="text-gray-600 whitespace-pre-line">{annonce.description}</p>
+              <div className="pt-4 sm:pt-6 border-t">
+                <h2 className="font-display text-lg sm:text-xl font-bold text-luxury-green-dark mb-3">Description</h2>
+                <p className="text-gray-600 whitespace-pre-line text-sm sm:text-base">{annonce.description}</p>
               </div>
 
               {/* Équipements */}
-              <div className="pt-6 border-t">
-                <h2 className="font-display text-xl font-bold text-luxury-green-dark mb-4">Équipements</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="pt-4 sm:pt-6 border-t">
+                <h2 className="font-display text-lg sm:text-xl font-bold text-luxury-green-dark mb-4">Équipements</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                   {[
                     { value: annonce.meuble, label: 'Meublé' },
                     { value: annonce.climatisation, label: 'Climatisation' },
@@ -333,8 +334,8 @@ export default function BienDetailPage() {
                     { value: annonce.gardien, label: 'Gardien' },
                     { value: annonce.balcon, label: 'Balcon' },
                   ].filter(eq => eq.value).map((eq, i) => (
-                    <div key={i} className="flex items-center gap-2 text-gray-600">
-                      <Check size={16} className="text-luxury-green" /> <span>{eq.label}</span>
+                    <div key={i} className="flex items-center gap-2 text-gray-600 text-sm">
+                      <Check size={16} className="text-luxury-green flex-shrink-0" /> <span>{eq.label}</span>
                     </div>
                   ))}
                 </div>
@@ -343,40 +344,37 @@ export default function BienDetailPage() {
           </div>
 
           {/* Colonne droite - Contact */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-2xl shadow-card p-6">
-              <h3 className="font-display text-xl font-bold text-luxury-green-dark mb-4">Contacter l&apos;annonceur</h3>
-              <div className="flex items-center gap-3 mb-6 p-4 bg-luxury-sand-light rounded-xl">
-                <div className="w-12 h-12 bg-luxury-green rounded-full flex items-center justify-center text-white font-bold">
+          <div className="space-y-4 sm:space-y-6 order-1 lg:order-2">
+            <div className="bg-white rounded-2xl shadow-card p-4 sm:p-6 lg:sticky lg:top-24">
+              <h3 className="font-display text-lg sm:text-xl font-bold text-luxury-green-dark mb-4">Contacter l&apos;annonceur</h3>
+              <div className="flex items-center gap-3 mb-4 sm:mb-6 p-3 sm:p-4 bg-luxury-sand-light rounded-xl">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-luxury-green rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                   {annonce.user.prenom?.charAt(0)}{annonce.user.nom?.charAt(0)}
                 </div>
-                <div>
-                  <p className="font-semibold text-luxury-green-dark flex items-center gap-2">
+                <div className="min-w-0">
+                  <p className="font-semibold text-luxury-green-dark text-sm sm:text-base flex items-center gap-2 flex-wrap">
                     {annonce.user.prenom} {annonce.user.nom}
                     {estVerifie && (
-                      <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <CheckCircle size={10} /> Vérifié
-                      </span>
+                      <CheckCircle size={16} className="text-green-500 fill-green-500 flex-shrink-0" />
                     )}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs sm:text-sm text-gray-500">
                     {estVerifie ? 'Annonceur vérifié' : 'Annonceur'}
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <a href={`tel:${annonce.user.telephone}`} className="btn-primary w-full flex items-center justify-center gap-2">
+              <div className="space-y-2 sm:space-y-3">
+                <a href={`tel:${annonce.user.telephone}`} className="btn-primary w-full flex items-center justify-center gap-2 text-sm sm:text-base py-2.5 sm:py-3">
                   <Phone size={20} /> Appeler
                 </a>
-                <button onClick={() => setShowContactForm(!showContactForm)} className="btn-secondary w-full flex items-center justify-center gap-2">
+                <button onClick={() => setShowContactForm(!showContactForm)} className="btn-secondary w-full flex items-center justify-center gap-2 text-sm sm:text-base py-2.5 sm:py-3">
                   <MessageSquare size={20} /> Envoyer un message
                 </button>
               </div>
 
-              {/* Formulaire message */}
               {showContactForm && (
-                <div className="mt-4 p-4 bg-luxury-sand-light rounded-xl space-y-3">
+                <div className="mt-4 p-3 sm:p-4 bg-luxury-sand-light rounded-xl space-y-3">
                   <textarea
                     rows={3}
                     value={message}
@@ -391,14 +389,13 @@ export default function BienDetailPage() {
                 </div>
               )}
 
-              {/* Signaler */}
-              <div className="mt-6 pt-6 border-t">
-                <button onClick={() => setShowSignalForm(!showSignalForm)} className="text-sm text-red-500 hover:text-red-600 flex items-center gap-1">
+              <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t">
+                <button onClick={() => setShowSignalForm(!showSignalForm)} className="text-xs sm:text-sm text-red-500 hover:text-red-600 flex items-center gap-1">
                   <Flag size={14} /> Signaler cette annonce
                 </button>
 
                 {showSignalForm && (
-                  <div className="mt-3 p-4 bg-red-50 rounded-xl space-y-3">
+                  <div className="mt-3 p-3 sm:p-4 bg-red-50 rounded-xl space-y-3">
                     <select value={signalType} onChange={(e) => setSignalType(e.target.value)} className="input-luxury text-sm">
                       <option value="CONTENU_INAPPROPRIE">Contenu inapproprié</option>
                       <option value="ARNAQUE">Arnaque</option>
@@ -413,7 +410,7 @@ export default function BienDetailPage() {
                 )}
               </div>
 
-              <div className="mt-6 pt-6 border-t text-center text-sm text-gray-400">
+              <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t text-center text-xs sm:text-sm text-gray-400">
                 <Eye size={16} className="inline mr-1" /> {annonce.vues} vues
                 {annonce.datePublication && <span> • Publiée le {new Date(annonce.datePublication).toLocaleDateString('fr-FR')}</span>}
               </div>
