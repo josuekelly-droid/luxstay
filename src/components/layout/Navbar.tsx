@@ -1,7 +1,7 @@
 // src/components/layout/Navbar.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -34,13 +34,24 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 10);
-    window.addEventListener('scroll', handleScroll);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Fermer le menu au changement de page
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
+
   const isDashboard = pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin');
   if (isDashboard) return null;
+
+  const toggleMenu = useCallback(() => {
+    setIsOpen(prev => !prev);
+  }, []);
 
   return (
     <header
@@ -124,80 +135,91 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Burger Mobile */}
+          {/* Burger Mobile - CORRIGÉ */}
           <button
-            onClick={() => setIsOpen(!isOpen)}
-            className={`lg:hidden p-2 rounded-xl transition flex-shrink-0 ${
+            type="button"
+            onClick={toggleMenu}
+            className={`lg:hidden p-2 rounded-xl transition flex-shrink-0 z-[60] ${
               isScrolled ? 'text-luxury-green-dark' : 'text-white'
             }`}
+            aria-label={isOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+            style={{ touchAction: 'manipulation' }}
           >
             {isOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </div>
 
-      {/* Menu Mobile/Tablette */}
+      {/* Menu Mobile/Tablette - CORRIGÉ */}
       {isOpen && (
-        <div className="lg:hidden bg-white border-t border-gray-100 shadow-elevated max-h-[85vh] overflow-y-auto">
-          <div className="container mx-auto px-3 sm:px-4 py-3 space-y-1.5">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${
-                  pathname === link.href
-                    ? 'bg-luxury-green text-white'
-                    : 'text-luxury-green-dark hover:bg-luxury-green/5'
-                }`}
-              >
-                {link.icon}
-                {link.label}
-              </Link>
-            ))}
-
-            <hr className="my-3 border-gray-100" />
-
-            {session ? (
-              <Link
-                href="/dashboard"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-luxury-green text-white text-sm font-semibold"
-              >
-                <LayoutDashboard size={18} />
-                Dashboard
-              </Link>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
+        <>
+          {/* Overlay */}
+          <div 
+            className="lg:hidden fixed inset-0 bg-black/30 z-40"
+            onClick={() => setIsOpen(false)}
+          />
+          
+          <div className="lg:hidden fixed top-16 sm:top-20 left-0 right-0 bg-white border-t border-gray-100 shadow-elevated z-50 max-h-[calc(100vh-4rem)] overflow-y-auto">
+            <div className="container mx-auto px-3 sm:px-4 py-3 space-y-1.5">
+              {navLinks.map((link) => (
                 <Link
-                  href="/connexion"
+                  key={link.href}
+                  href={link.href}
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-luxury-green text-luxury-green text-sm font-semibold"
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${
+                    pathname === link.href
+                      ? 'bg-luxury-green text-white'
+                      : 'text-luxury-green-dark hover:bg-luxury-green/5'
+                  }`}
                 >
-                  <LogIn size={18} />
-                  Connexion
+                  {link.icon}
+                  {link.label}
                 </Link>
-                <Link
-                  href="/inscription"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-luxury-gold text-luxury-green-dark text-sm font-semibold"
-                >
-                  <UserPlus size={18} />
-                  Inscription
-                </Link>
-              </div>
-            )}
+              ))}
 
-            <Link
-              href="/recherche"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-luxury-sand-light text-luxury-green-dark text-sm font-medium"
-            >
-              <Search size={18} />
-              Rechercher un bien
-            </Link>
+              <hr className="my-3 border-gray-100" />
+
+              {session ? (
+                <Link
+                  href="/dashboard"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-luxury-green text-white text-sm font-semibold"
+                >
+                  <LayoutDashboard size={18} />
+                  Dashboard
+                </Link>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    href="/connexion"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-luxury-green text-luxury-green text-sm font-semibold"
+                  >
+                    <LogIn size={18} />
+                    Connexion
+                  </Link>
+                  <Link
+                    href="/inscription"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-luxury-gold text-luxury-green-dark text-sm font-semibold"
+                  >
+                    <UserPlus size={18} />
+                    Inscription
+                  </Link>
+                </div>
+              )}
+
+              <Link
+                href="/recherche"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-luxury-sand-light text-luxury-green-dark text-sm font-medium"
+              >
+                <Search size={18} />
+                Rechercher un bien
+              </Link>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </header>
   );
