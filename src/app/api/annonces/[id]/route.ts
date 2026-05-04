@@ -11,7 +11,7 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    const { id } = await params; // ✅ Attendre params
+    const { id } = await params;
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
@@ -51,7 +51,7 @@ export async function PUT(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    const { id } = await params; // ✅ Attendre params
+    const { id } = await params;
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
@@ -122,7 +122,7 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    const { id } = await params; // ✅ Attendre params
+    const { id } = await params;
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
@@ -136,13 +136,26 @@ export async function DELETE(
       return NextResponse.json({ error: 'Annonce introuvable' }, { status: 404 });
     }
 
-    if (annonce.userId !== session.user.id && session.user.role !== 'ADMIN') {
+    if (annonce.userId !== session.user.id && (session.user as any).role !== 'ADMIN') {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
     }
 
+    // Supprimer l'annonce
     await prisma.annonce.delete({
       where: { id },
     });
+
+    // Mettre à jour le compteur d'annonces utilisées
+    const abonnement = await prisma.abonnement.findFirst({
+      where: { userId: annonce.userId, actif: true },
+    });
+
+    if (abonnement && abonnement.annoncesUtilisees > 0) {
+      await prisma.abonnement.update({
+        where: { id: abonnement.id },
+        data: { annoncesUtilisees: abonnement.annoncesUtilisees - 1 },
+      });
+    }
 
     return NextResponse.json({ success: true, message: 'Annonce supprimée' });
   } catch (error) {
