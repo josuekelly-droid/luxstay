@@ -5,17 +5,22 @@ import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/db';
 
 const TARIFS_BOOST = {
-  BOOST: { prix: 5000, duree: 7 },      // 7 jours
-  EPINGLEE: { prix: 10000, duree: 15 },  // 15 jours
-  PRIORITAIRE: { prix: 20000, duree: 30 }, // 30 jours
+  BOOST: { prix: 5000, duree: 7 },
+  EPINGLEE: { prix: 10000, duree: 15 },
+  PRIORITAIRE: { prix: 20000, duree: 30 },
 };
 
+// GET - Récupérer les tarifs des boosts
+export async function GET() {
+  return NextResponse.json({ tarifs: TARIFS_BOOST });
+}
+
+// PUT - Activer un boost (appelé par le webhook après paiement)
 export async function PUT(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
-    }
+    // Vérifier si l'appel vient du webhook (cron) ou d'un utilisateur
+    const authHeader = request.headers.get('authorization');
+    const isWebhook = authHeader === `Bearer ${process.env.CRON_SECRET}`;
 
     const { annonceId, type } = await request.json();
 
@@ -23,9 +28,25 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Type de boost invalide' }, { status: 400 });
     }
 
-    // Vérifier que l'annonce appartient à l'utilisateur
-    const annonce = await prisma.annonce.findFirst({
-      where: { id: annonceId, userId: session.user.id },
+    // Si ce n'est pas le webhook, vérifier que l'utilisateur est propriétaire
+    if (!isWebhook) {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      }
+
+      const annonce = await prisma.annonce.findFirst({
+        where: { id: annonceId, userId: session.user.id },
+      });
+
+      if (!annonce) {
+        return NextResponse.json({ error: 'Annonce introuvable' }, { status: 404 });
+      }
+    }
+
+    // Récupérer l'annonce (pour le webhook)
+    const annonce = await prisma.annonce.findUnique({
+      where: { id: annonceId },
     });
 
     if (!annonce) {
@@ -34,13 +55,14 @@ export async function PUT(request: Request) {
 
     const { duree } = TARIFS_BOOST[type as keyof typeof TARIFS_BOOST];
 
-    // Appliquer le boost
+    // Appliquer le boost sans écraser les autres boosts existants
     const updateData: any = {
-      boost: type === 'BOOST' ? true : annonce.boost,
-      epinglee: type === 'EPINGLEE' ? true : annonce.epinglee,
-      prioritaire: type === 'PRIORITAIRE' ? true : annonce.prioritaire,
       dateExpiration: new Date(Date.now() + duree * 24 * 60 * 60 * 1000),
     };
+
+    if (type === 'BOOST') updateData.boost = true;
+    if (type === 'EPINGLEE') updateData.epinglee = true;
+    if (type === 'PRIORITAIRE') updateData.prioritaire = true;
 
     await prisma.annonce.update({
       where: { id: annonceId },
@@ -55,8 +77,4 @@ export async function PUT(request: Request) {
     console.error('Erreur boost:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
-}
-
-export async function GET() {
-  return NextResponse.json({ tarifs: TARIFS_BOOST });
 }

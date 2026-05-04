@@ -28,7 +28,6 @@ export async function POST(request: Request) {
     if (body.bizStatus === 'PAY_SUCCESS') {
       const transactionId = body.bizId;
 
-      // Trouver le paiement correspondant
       const paiement = await prisma.paiement.findFirst({
         where: {
           modePaiement: 'BINANCE',
@@ -38,7 +37,6 @@ export async function POST(request: Request) {
       });
 
       if (paiement) {
-        // Mettre à jour le statut du paiement
         await prisma.paiement.update({
           where: { id: paiement.id },
           data: {
@@ -48,8 +46,14 @@ export async function POST(request: Request) {
           },
         });
 
-        // Activer l'abonnement
-        await activerAbonnementBinance(paiement.userId, paiement.id);
+        // Vérifier si c'est un paiement de boost
+        const metaData = paiement.metaData as any;
+        if (metaData?.annonceId && metaData?.typeBoost) {
+          await activerBoostBinance(metaData.annonceId, metaData.typeBoost);
+          console.log(`✅ Boost Binance ${metaData.typeBoost} activé pour annonce ${metaData.annonceId}`);
+        } else {
+          await activerAbonnementBinance(paiement.userId, paiement.id);
+        }
 
         console.log(`✅ Paiement Binance validé: ${transactionId}`);
       }
@@ -63,26 +67,22 @@ export async function POST(request: Request) {
 }
 
 async function activerAbonnementBinance(userId: string, paiementId: string) {
-  // Désactiver les anciens abonnements
   await prisma.abonnement.updateMany({
     where: { userId, actif: true },
     data: { actif: false },
   });
 
-  // Passer en ANNOUNCER
   await prisma.user.update({
     where: { id: userId },
     data: { role: 'ANNOUNCER' },
   });
 
-  // Récupérer le paiement
   const paiement = await prisma.paiement.findUnique({
     where: { id: paiementId },
   });
 
   if (!paiement) return;
 
-  // Déterminer le plan selon le montant
   const plan = paiement.montant >= 70000 ? 'BUSINESS' :
                paiement.montant >= 35000 ? 'PREMIUM' :
                paiement.montant >= 15000 ? 'STANDARD' : 'GRATUIT';
@@ -95,7 +95,6 @@ async function activerAbonnementBinance(userId: string, paiementId: string) {
                             plan === 'PREMIUM' ? 20 :
                             plan === 'STANDARD' ? 10 : 5;
 
-  // Créer le nouvel abonnement
   await prisma.abonnement.create({
     data: {
       userId,
@@ -107,5 +106,28 @@ async function activerAbonnementBinance(userId: string, paiementId: string) {
       photosParAnnonce,
       paiement: { connect: { id: paiementId } },
     },
+  });
+}
+
+async function activerBoostBinance(annonceId: string, type: string) {
+  const durees: Record<string, number> = {
+    BOOST: 7,
+    EPINGLEE: 15,
+    PRIORITAIRE: 30,
+  };
+
+  const duree = durees[type] || 7;
+
+  const updateData: any = {
+    dateExpiration: new Date(Date.now() + duree * 24 * 60 * 60 * 1000),
+  };
+
+  if (type === 'BOOST') updateData.boost = true;
+  if (type === 'EPINGLEE') updateData.epinglee = true;
+  if (type === 'PRIORITAIRE') updateData.prioritaire = true;
+
+  await prisma.annonce.update({
+    where: { id: annonceId },
+    data: updateData,
   });
 }

@@ -15,7 +15,6 @@ export async function POST(request: Request) {
       const captureId = resource.id;
       const orderId = resource.supplementary_data?.related_ids?.order_id;
 
-      // Trouver le paiement correspondant
       const paiement = await prisma.paiement.findFirst({
         where: {
           modePaiement: 'PAYPAL',
@@ -25,7 +24,6 @@ export async function POST(request: Request) {
       });
 
       if (paiement) {
-        // Mettre à jour le statut du paiement
         await prisma.paiement.update({
           where: { id: paiement.id },
           data: {
@@ -36,8 +34,14 @@ export async function POST(request: Request) {
           },
         });
 
-        // Activer l'abonnement
-        await activerAbonnement(paiement.userId, paiement.id);
+        // Vérifier si c'est un paiement de boost
+        const metaData = paiement.metaData as any;
+        if (metaData?.annonceId && metaData?.typeBoost) {
+          await activerBoost(metaData.annonceId, metaData.typeBoost);
+          console.log(`✅ Boost PayPal ${metaData.typeBoost} activé pour annonce ${metaData.annonceId}`);
+        } else {
+          await activerAbonnement(paiement.userId, paiement.id);
+        }
 
         console.log(`✅ Paiement PayPal validé: ${captureId}`);
       }
@@ -55,30 +59,25 @@ export async function POST(request: Request) {
 // ==========================================
 
 async function activerAbonnement(userId: string, paiementId: string) {
-  // 1. Désactiver les anciens abonnements
   await prisma.abonnement.updateMany({
     where: { userId, actif: true },
     data: { actif: false },
   });
 
-  // ✅ PASSER EN ANNONCEUR
   await prisma.user.update({
     where: { id: userId },
     data: { role: 'ANNOUNCER' },
   });
 
-  // 2. Récupérer le paiement
   const paiement = await prisma.paiement.findUnique({
     where: { id: paiementId },
   });
 
   if (!paiement) return;
 
-  // 3. Déterminer le plan et la durée
   const plan: PlanType = determinerPlan(paiement.montant);
   const duree: DureeType = determinerDuree(paiement.montant, plan);
 
-  // 4. Créer le nouvel abonnement
   await prisma.abonnement.create({
     data: {
       userId,
@@ -90,6 +89,29 @@ async function activerAbonnement(userId: string, paiementId: string) {
       photosParAnnonce: photosParPlan(plan),
       paiement: { connect: { id: paiementId } },
     },
+  });
+}
+
+async function activerBoost(annonceId: string, type: string) {
+  const durees: Record<string, number> = {
+    BOOST: 7,
+    EPINGLEE: 15,
+    PRIORITAIRE: 30,
+  };
+
+  const duree = durees[type] || 7;
+
+  const updateData: any = {
+    dateExpiration: new Date(Date.now() + duree * 24 * 60 * 60 * 1000),
+  };
+
+  if (type === 'BOOST') updateData.boost = true;
+  if (type === 'EPINGLEE') updateData.epinglee = true;
+  if (type === 'PRIORITAIRE') updateData.prioritaire = true;
+
+  await prisma.annonce.update({
+    where: { id: annonceId },
+    data: updateData,
   });
 }
 
