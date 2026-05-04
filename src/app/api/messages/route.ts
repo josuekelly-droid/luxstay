@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/db';
 
-// GET - Récupérer les messages de l'utilisateur
+// GET - Récupérer TOUS les messages (envoyés et reçus)
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -15,7 +15,10 @@ export async function GET() {
 
     const messages = await prisma.message.findMany({
       where: {
-        destinataireId: session.user.id,
+        OR: [
+          { expediteurId: session.user.id },
+          { destinataireId: session.user.id },
+        ],
       },
       include: {
         expediteur: {
@@ -24,6 +27,13 @@ export async function GET() {
             nom: true,
             prenom: true,
             email: true,
+          },
+        },
+        destinataire: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true,
           },
         },
         annonce: {
@@ -55,7 +65,10 @@ export async function POST(request: Request) {
     const { destinataireId, contenu, annonceId } = await request.json();
 
     if (!destinataireId || !contenu) {
-      return NextResponse.json({ error: 'Destinataire et contenu requis' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Destinataire et contenu requis' },
+        { status: 400 }
+      );
     }
 
     const message = await prisma.message.create({
@@ -69,8 +82,8 @@ export async function POST(request: Request) {
         expediteur: {
           select: { nom: true, prenom: true },
         },
-        annonce: {
-          select: { titre: true },
+        destinataire: {
+          select: { nom: true, prenom: true },
         },
       },
     });
@@ -78,6 +91,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, message }, { status: 201 });
   } catch (error) {
     console.error('Erreur envoi message:', error);
-    return NextResponse.json({ error: 'Erreur lors de l\'envoi' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Erreur lors de l\'envoi' },
+      { status: 500 }
+    );
   }
 }
