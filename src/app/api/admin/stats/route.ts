@@ -20,7 +20,11 @@ export async function GET() {
       revenuAgg,
       nouveauxUtilisateurs,
       totalAnnonceurs,
+      boostsActifs,
+      prioritaires,
+      revenuBoostsAgg,
     ] = await Promise.all([
+      // Utilisateurs
       prisma.user.count(),
       prisma.annonce.count(),
       prisma.annonce.count({ where: { statut: 'EN_ATTENTE' } }),
@@ -37,6 +41,17 @@ export async function GET() {
         },
       }),
       prisma.user.count({ where: { role: 'ANNOUNCER' } }),
+
+      // Boosts
+      prisma.annonce.count({ where: { boost: true } }),
+      prisma.annonce.count({ where: { prioritaire: true } }),
+      prisma.paiement.aggregate({
+        where: {
+          statut: 'COMPLETE',
+          NOT: { metaData: { equals: '{}' } },
+        },
+        _sum: { montant: true },
+      }),
     ]);
 
     const tauxConversion = totalUtilisateurs > 0
@@ -51,6 +66,9 @@ export async function GET() {
       revenuTotal: revenuAgg._sum.montant || 0,
       nouveauxUtilisateurs,
       tauxConversion,
+      boostsActifs,
+      prioritaires,
+      revenuBoosts: (revenuBoostsAgg as any)?._sum?.montant || 0,
     };
 
     return NextResponse.json({ stats });

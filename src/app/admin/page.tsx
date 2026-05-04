@@ -11,7 +11,8 @@ import {
   Loader2,
   ArrowRight,
   Eye,
-  UserPlus,
+  Zap,
+  Crown,
   DollarSign,
 } from 'lucide-react';
 
@@ -23,6 +24,9 @@ interface StatsAdmin {
   revenuTotal: number;
   nouveauxUtilisateurs: number;
   tauxConversion: number;
+  boostsActifs: number;
+  prioritaires: number;
+  revenuBoosts: number;
 }
 
 export default function AdminDashboardPage() {
@@ -97,26 +101,90 @@ export default function AdminDashboardPage() {
         <p className="text-gray-500 text-sm mt-1">Bienvenue dans l&apos;administration LuxStay</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats principales */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {cardsStats.map((stat, index) => (
           <Link
             key={index}
             href={stat.lien}
-            className="bg-white rounded-2xl shadow-card p-6 hover:shadow-luxury transition group"
+            className="bg-white rounded-2xl shadow-card p-4 sm:p-6 hover:shadow-luxury transition group"
           >
-            <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 ${stat.color} rounded-xl flex items-center justify-center text-white group-hover:scale-110 transition-transform`}>
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 ${stat.color} rounded-xl flex items-center justify-center text-white group-hover:scale-110 transition-transform`}>
                 {stat.icon}
               </div>
               <div>
-                <p className="text-2xl font-bold text-luxury-green-dark">{stat.value}</p>
-                <p className="text-sm text-gray-500">{stat.label}</p>
+                <p className="text-xl sm:text-2xl font-bold text-luxury-green-dark">{stat.value}</p>
+                <p className="text-xs sm:text-sm text-gray-500">{stat.label}</p>
               </div>
             </div>
-            <p className="text-xs text-gray-400 mt-3">{stat.sous}</p>
+            <p className="text-[10px] sm:text-xs text-gray-400 mt-2 sm:mt-3">{stat.sous}</p>
           </Link>
         ))}
+      </div>
+
+      {/* Stats Boosts */}
+      <div>
+        <h3 className="font-display text-lg font-bold text-luxury-green-dark mb-4 flex items-center gap-2">
+          <Zap size={20} className="text-luxury-gold" /> Boosts & Visibilité
+        </h3>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white rounded-2xl shadow-card p-4 sm:p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white">
+                <TrendingUp size={20} />
+              </div>
+              <div>
+                <p className="text-xl sm:text-2xl font-bold text-luxury-green-dark">{stats?.boostsActifs || 0}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Boosts actifs</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-card p-4 sm:p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center text-white">
+                <Crown size={20} />
+              </div>
+              <div>
+                <p className="text-xl sm:text-2xl font-bold text-luxury-green-dark">{stats?.prioritaires || 0}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Prioritaires</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-card p-4 sm:p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-luxury-gold rounded-xl flex items-center justify-center text-white">
+                <DollarSign size={20} />
+              </div>
+              <div>
+                <p className="text-xl sm:text-2xl font-bold text-luxury-green-dark">
+                  {(stats?.revenuBoosts || 0).toLocaleString('fr-FR')} FCFA
+                </p>
+                <p className="text-xs sm:text-sm text-gray-500">Revenus boosts</p>
+              </div>
+            </div>
+          </div>
+
+          <Link
+            href="/admin/annonces?filtre=boost"
+            className="bg-white rounded-2xl shadow-card p-4 sm:p-6 hover:shadow-luxury transition group"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-luxury-green rounded-xl flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                <Eye size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-luxury-green-dark">Gérer les boosts</p>
+                <p className="text-xs text-gray-500">Voir et désactiver</p>
+              </div>
+            </div>
+            <span className="text-luxury-green font-semibold text-xs flex items-center gap-1">
+              Accéder <ArrowRight size={14} />
+            </span>
+          </Link>
+        </div>
       </div>
 
       {/* Actions rapides */}
