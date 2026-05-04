@@ -108,6 +108,16 @@ export async function POST(request: Request) {
       );
     }
 
+    // ✅ 5. Vérifier la limite de photos
+    if (data.images.length > abonnement.photosParAnnonce) {
+      return NextResponse.json(
+        {
+          error: `Limite de ${abonnement.photosParAnnonce} photos par annonce atteinte. Votre plan ${abonnement.plan} vous permet jusqu'à ${abonnement.photosParAnnonce} photos.`,
+        },
+        { status: 403 }
+      );
+    }
+
     // ==========================================
     // CRÉATION DE L'ANNONCE
     // ==========================================
