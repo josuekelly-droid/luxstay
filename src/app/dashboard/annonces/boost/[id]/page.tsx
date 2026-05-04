@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2, TrendingUp, ArrowLeft, Zap, Pin, Crown, Check } from 'lucide-react';
+import { Loader2, TrendingUp, ArrowLeft, Zap, Pin, Crown, Check, Wallet, CreditCard, Bitcoin } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const options = [
@@ -40,12 +40,19 @@ const options = [
   },
 ];
 
+const modesPaiement = [
+  { id: 'FEDAPAY', label: 'Mobile Money', icon: <Wallet size={20} />, couleur: 'border-luxury-gold' },
+  { id: 'PAYPAL', label: 'PayPal', icon: <CreditCard size={20} />, couleur: 'border-blue-600' },
+  { id: 'BINANCE', label: 'Crypto', icon: <Bitcoin size={20} />, couleur: 'border-yellow-500' },
+];
+
 export default function BoostAnnoncePage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
 
   const [selected, setSelected] = useState('');
+  const [modePaiement, setModePaiement] = useState('FEDAPAY');
   const [isLoading, setIsLoading] = useState(false);
   const [annonce, setAnnonce] = useState<any>(null);
 
@@ -72,31 +79,30 @@ export default function BoostAnnoncePage() {
       const response = await fetch('/api/paiement/boost', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ annonceId: id, type: selected, modePaiement: 'FEDAPAY' }),
+        body: JSON.stringify({ annonceId: id, type: selected, modePaiement }),
       });
 
       const data = await response.json();
 
-      if (response.ok && data.url) {
+      if (!response.ok) {
+        toast.error(data.error || 'Erreur lors de la création du paiement');
+        return;
+      }
+
+      if (data.url) {
+        // ✅ Rediriger vers la page de paiement sécurisée
         window.location.href = data.url;
       } else {
-        // Paiement direct si pas d'URL
-        const boostRes = await fetch('/api/annonces/boost', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ annonceId: id, type: selected }),
-        });
-        if (boostRes.ok) {
-          toast.success(`Boost ${selected} activé !`);
-          router.push('/dashboard/annonces');
-        }
+        toast.error('Paiement indisponible pour le moment.');
       }
     } catch (error) {
-      toast.error('Erreur');
+      toast.error('Erreur de connexion');
     } finally {
       setIsLoading(false);
     }
   };
+
+  const boostChoisi = options.find(o => o.id === selected);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -109,6 +115,7 @@ export default function BoostAnnoncePage() {
         {annonce && <p className="text-gray-500 text-sm mt-1">{annonce.titre}</p>}
       </div>
 
+      {/* Options de boost */}
       <div className="grid gap-4">
         {options.map((opt) => (
           <button
@@ -134,9 +141,44 @@ export default function BoostAnnoncePage() {
         ))}
       </div>
 
-      <button onClick={handlePayer} disabled={isLoading || !selected} className="btn-primary w-full flex items-center justify-center gap-2 py-4 disabled:opacity-50">
-        {isLoading ? <Loader2 size={20} className="animate-spin" /> : <TrendingUp size={20} />}
-        {isLoading ? 'Redirection...' : 'Payer et activer le boost'}
+      {/* Mode de paiement */}
+      {selected && (
+        <div className="bg-white rounded-2xl shadow-card p-5 space-y-3">
+          <h3 className="font-semibold text-luxury-green-dark text-sm">Mode de paiement</h3>
+          <div className="flex gap-2">
+            {modesPaiement.map((mode) => (
+              <button
+                key={mode.id}
+                onClick={() => setModePaiement(mode.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 text-sm font-medium transition ${
+                  modePaiement === mode.id
+                    ? `${mode.couleur} bg-gray-50`
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                {mode.icon}
+                {mode.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Bouton Payer */}
+      <button
+        onClick={handlePayer}
+        disabled={isLoading || !selected}
+        className="btn-primary w-full flex items-center justify-center gap-2 py-4 disabled:opacity-50"
+      >
+        {isLoading ? (
+          <Loader2 size={20} className="animate-spin" />
+        ) : (
+          <TrendingUp size={20} />
+        )}
+        {isLoading
+          ? 'Redirection vers le paiement...'
+          : `Payer ${boostChoisi?.prix.toLocaleString('fr-FR') || ''} FCFA${modePaiement === 'PAYPAL' ? ' (~' + (boostChoisi ? (boostChoisi.prix / 600).toFixed(2) : '0') + ' USD)' : ''}`
+        }
       </button>
     </div>
   );
