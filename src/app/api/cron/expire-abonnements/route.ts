@@ -13,6 +13,7 @@ export async function GET(request: Request) {
     const maintenant = new Date();
     let compteurAbonnements = 0;
     let compteurBoosts = 0;
+    let compteurPaiementsExpires = 0;
 
     // ==========================================
     // 1. GÉRER LES ABONNEMENTS EXPIRÉS
@@ -31,13 +32,11 @@ export async function GET(request: Request) {
     console.log(`🔍 ${abonnementsExpires.length} abonnement(s) expiré(s) trouvé(s)`);
 
     for (const abo of abonnementsExpires) {
-      // Désactiver l'ancien abonnement
       await prisma.abonnement.update({
         where: { id: abo.id },
         data: { actif: false },
       });
 
-      // Créer un abonnement gratuit par défaut
       await prisma.abonnement.create({
         data: {
           userId: abo.userId,
@@ -92,11 +91,38 @@ export async function GET(request: Request) {
       console.log(`✅ Boost expiré pour "${annonce.titre}" → ${typesExpires.join(', ')} désactivé(s)`);
     }
 
+    // ==========================================
+    // 3. GÉRER LES PAIEMENTS CRYPTO EXPIRÉS
+    // ==========================================
+    const delaiExpiration = new Date(Date.now() - 30 * 60 * 1000); // 30 minutes
+
+    const paiementsExpires = await prisma.paiement.findMany({
+      where: {
+        modePaiement: 'NOWPAYMENTS',
+        statut: 'EN_ATTENTE',
+        createdAt: { lt: delaiExpiration },
+      },
+      select: { id: true, reference: true },
+    });
+
+    console.log(`🔍 ${paiementsExpires.length} paiement(s) crypto expiré(s) trouvé(s)`);
+
+    for (const p of paiementsExpires) {
+      await prisma.paiement.update({
+        where: { id: p.id },
+        data: { statut: 'ECHOUE' },
+      });
+
+      compteurPaiementsExpires++;
+      console.log(`✅ Paiement crypto expiré: ${p.reference} → ECHOUE`);
+    }
+
     return NextResponse.json({
       success: true,
       abonnementsExpires: compteurAbonnements,
       boostsExpires: compteurBoosts,
-      message: `${compteurAbonnements} abonnement(s) et ${compteurBoosts} boost(s) traités`,
+      paiementsExpires: compteurPaiementsExpires,
+      message: `${compteurAbonnements} abonnement(s), ${compteurBoosts} boost(s) et ${compteurPaiementsExpires} paiement(s) crypto traités`,
     });
   } catch (error) {
     console.error('Erreur cron expiration:', error);
