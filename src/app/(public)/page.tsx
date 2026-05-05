@@ -97,7 +97,7 @@ export default function HomePage() {
                   <p className="text-xs sm:text-sm text-gray-400">Clients satisfaits</p>
                 </div>
                 <div>
-                  <span className="text-2xl sm:text-3xl font-bold text-luxury-gold">4</span>
+                  <span className="text-2xl sm:text-3xl font-bold text-luxury-gold">15+</span>
                   <p className="text-xs sm:text-sm text-gray-400">Villes couvertes</p>
                 </div>
               </div>
