@@ -24,7 +24,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://www.paypal.com https://www.paypalobjects.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.paypal.com; img-src 'self' blob: data: https://images.unsplash.com https://res.cloudinary.com https://www.paypal.com https://www.paypalobjects.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://vercel.live https://api-m.paypal.com https://www.paypal.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests;",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://www.paypal.com https://www.paypalobjects.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.paypal.com; img-src 'self' blob: data: https://images.unsplash.com https://res.cloudinary.com https://www.paypal.com https://www.paypalobjects.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://vercel.live https://api-m.paypal.com https://www.paypal.com; frame-src 'self' https://www.paypal.com https://www.sandbox.paypal.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests;",
           },
           {
             key: 'X-Content-Type-Options',
