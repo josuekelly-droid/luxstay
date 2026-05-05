@@ -148,7 +148,6 @@ function RechercheContent() {
   const formatPrix = (prix: number) => new Intl.NumberFormat('fr-FR').format(Math.round(prix));
 
   const handleChange = (field: string, value: string) => {
-    // Pour la recherche : pas de chiffres, pas de caractères spéciaux
     if (field === 'recherche') {
       value = value.replace(/[^a-zA-ZÀ-ÿ\s-]/g, '');
     }
@@ -215,7 +214,34 @@ function RechercheContent() {
               <option value="prix_desc">Prix décroissant</option>
               <option value="vues">Plus vus</option>
             </select>
+            <button onClick={() => setFiltresAvances(!filtresAvances)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${filtresAvances ? 'bg-luxury-green text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              <SlidersHorizontal size={16} /> Filtres avancés
+            </button>
           </div>
+
+          {filtresAvances && (
+            <div className="grid sm:grid-cols-3 gap-4 mt-4 pt-4 border-t">
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Prix min (FCFA)</label>
+                <input type="number" value={filtres.prixMin} onChange={(e) => handleChange('prixMin', e.target.value)} className="input-luxury text-sm" placeholder="0" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Prix max (FCFA)</label>
+                <input type="number" value={filtres.prixMax} onChange={(e) => handleChange('prixMax', e.target.value)} className="input-luxury text-sm" placeholder="100000000" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Chambres min</label>
+                <select value={filtres.chambres} onChange={(e) => handleChange('chambres', e.target.value)} className="input-luxury text-sm">
+                  <option value="">Toutes</option>
+                  <option value="1">1+</option>
+                  <option value="2">2+</option>
+                  <option value="3">3+</option>
+                  <option value="4">4+</option>
+                  <option value="5">5+</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="mb-4 text-sm text-gray-500">
