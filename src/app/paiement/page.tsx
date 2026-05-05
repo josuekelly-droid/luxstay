@@ -118,7 +118,7 @@ function PaiementContent() {
             </div>
 
             <div className="flex justify-between text-2xl font-bold pt-3 border-t border-gray-200">
-              <span className="text-luxury-green-dark">Total</span>
+              <span className="text-luxury-green-dark mr-3">Total</span>
               <span className="text-luxury-green">
                 {formatPrix(montant)} FCFA
                 <span className="text-sm font-normal text-gray-500 ml-2">
