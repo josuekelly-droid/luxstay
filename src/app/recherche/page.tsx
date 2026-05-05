@@ -38,6 +38,13 @@ interface Annonce {
   _count: { favoris: number };
 }
 
+const VILLES = [
+  'Cotonou', 'Abomey-Calavi', 'Porto-Novo', 'Parakou', 'Natitingou',
+  'Djougou', 'Bohicon', 'Abomey', 'Lokossa', 'Ouidah',
+  'Grand-Popo', 'Kandi', 'Malanville', 'Dassa-Zoumè', 'Savalou',
+  'Allada', 'Sèmè-Kpodji',
+];
+
 function RechercheContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -202,11 +209,9 @@ function RechercheContent() {
             </select>
             <select value={filtres.ville} onChange={(e) => handleChange('ville', e.target.value)} className="input-luxury text-sm w-auto">
               <option value="">Ville</option>
-              <option value="Cotonou">Cotonou</option>
-              <option value="Abomey-Calavi">Abomey-Calavi</option>
-              <option value="Porto-Novo">Porto-Novo</option>
-              <option value="Parakou">Parakou</option>
-              <option value="Natitingou">Natitingou</option>
+              {VILLES.map(ville => (
+                <option key={ville} value={ville}>{ville}</option>
+              ))}
             </select>
             <select value={filtres.tri} onChange={(e) => handleChange('tri', e.target.value)} className="input-luxury text-sm w-auto">
               <option value="recent">Plus récents</option>
