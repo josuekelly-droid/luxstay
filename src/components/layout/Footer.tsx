@@ -49,7 +49,7 @@ const footerLinks = {
     { href: '/a-propos', label: 'À propos' },
     { href: '/contact', label: 'Contact' },
     { href: '/faq', label: 'FAQ' },
-    { href: '/donner-avis', label: 'Donnez votre avis →' },
+    { href: '/donner-avis', label: 'Donnez votre avis' },
     { href: '/mentions-legales', label: 'Mentions légales' },
   ],
   annonceurs: [
