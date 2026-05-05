@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -17,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface Annonce {
   id: string;
@@ -39,6 +41,7 @@ interface Annonce {
 function RechercheContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
 
   const [annonces, setAnnonces] = useState<Annonce[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,6 +49,7 @@ function RechercheContent() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [filtresAvances, setFiltresAvances] = useState(false);
+  const [favorisIds, setFavorisIds] = useState<string[]>([]);
 
   const [filtres, setFiltres] = useState({
     type: searchParams.get('type') || '',
@@ -58,6 +62,53 @@ function RechercheContent() {
     tri: 'recent',
     recherche: '',
   });
+
+  useEffect(() => {
+    if (session) fetchFavoris();
+  }, [session]);
+
+  const fetchFavoris = async () => {
+    try {
+      const res = await fetch('/api/favoris');
+      const data = await res.json();
+      if (res.ok) {
+        setFavorisIds(data.favoris?.map((f: any) => f.annonceId) || []);
+      }
+    } catch (error) {}
+  };
+
+  const handleToggleFavori = async (e: React.MouseEvent, annonceId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!session) {
+      toast.error('Connectez-vous pour ajouter aux favoris');
+      return;
+    }
+
+    const isFavori = favorisIds.includes(annonceId);
+
+    try {
+      if (isFavori) {
+        const res = await fetch('/api/favoris');
+        const data = await res.json();
+        const favori = data.favoris?.find((f: any) => f.annonceId === annonceId);
+        if (favori) await fetch(`/api/favoris/${favori.id}`, { method: 'DELETE' });
+        setFavorisIds(prev => prev.filter(id => id !== annonceId));
+        toast.success('Retiré des favoris');
+      } else {
+        await fetch('/api/favoris', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ annonceId }),
+        });
+        setFavorisIds(prev => [...prev, annonceId]);
+        toast.success('Ajouté aux favoris');
+      }
+    } catch (error) {
+      toast.error('Erreur');
+    }
+  };
 
   const fetchAnnonces = useCallback(async () => {
     setIsLoading(true);
@@ -97,9 +148,9 @@ function RechercheContent() {
   const formatPrix = (prix: number) => new Intl.NumberFormat('fr-FR').format(Math.round(prix));
 
   const handleChange = (field: string, value: string) => {
-    // Nettoyer les caractères spéciaux pour le champ recherche
+    // Pour la recherche : pas de chiffres, pas de caractères spéciaux
     if (field === 'recherche') {
-      value = value.replace(/[^a-zA-Z0-9À-ÿ\s-]/g, '');
+      value = value.replace(/[^a-zA-ZÀ-ÿ\s-]/g, '');
     }
     setFiltres(prev => ({ ...prev, [field]: value }));
     setPage(1);
@@ -164,34 +215,7 @@ function RechercheContent() {
               <option value="prix_desc">Prix décroissant</option>
               <option value="vues">Plus vus</option>
             </select>
-            <button onClick={() => setFiltresAvances(!filtresAvances)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${filtresAvances ? 'bg-luxury-green text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-              <SlidersHorizontal size={16} /> Filtres avancés
-            </button>
           </div>
-
-          {filtresAvances && (
-            <div className="grid sm:grid-cols-3 gap-4 mt-4 pt-4 border-t">
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Prix min (FCFA)</label>
-                <input type="number" value={filtres.prixMin} onChange={(e) => handleChange('prixMin', e.target.value)} className="input-luxury text-sm" placeholder="0" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Prix max (FCFA)</label>
-                <input type="number" value={filtres.prixMax} onChange={(e) => handleChange('prixMax', e.target.value)} className="input-luxury text-sm" placeholder="100000000" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Chambres min</label>
-                <select value={filtres.chambres} onChange={(e) => handleChange('chambres', e.target.value)} className="input-luxury text-sm">
-                  <option value="">Toutes</option>
-                  <option value="1">1+</option>
-                  <option value="2">2+</option>
-                  <option value="3">3+</option>
-                  <option value="4">4+</option>
-                  <option value="5">5+</option>
-                </select>
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="mb-4 text-sm text-gray-500">
@@ -211,32 +235,41 @@ function RechercheContent() {
         ) : (
           <>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {annonces.map((annonce) => (
-                <Link key={annonce.id} href={`/bien/${annonce.id}`} className="bg-white rounded-2xl shadow-card overflow-hidden hover:shadow-luxury transition group">
-                  <div className="relative h-52 overflow-hidden">
-                    <Image src={annonce.images[0]?.url || '/placeholder-bien.jpg'} alt={annonce.titre} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
-                    <div className="absolute top-3 left-3 flex gap-2">
-                      <span className="bg-luxury-green text-white text-xs px-3 py-1 rounded-full">{annonce.transaction === 'VENTE' ? 'À vendre' : 'À louer'}</span>
-                      {annonce.prioritaire && <span className="bg-luxury-gold text-luxury-green-dark text-xs px-3 py-1 rounded-full font-bold">Premium</span>}
+              {annonces.map((annonce) => {
+                const isFavori = favorisIds.includes(annonce.id);
+                return (
+                  <Link key={annonce.id} href={`/bien/${annonce.id}`} className="bg-white rounded-2xl shadow-card overflow-hidden hover:shadow-luxury transition group">
+                    <div className="relative h-52 overflow-hidden">
+                      <Image src={annonce.images[0]?.url || '/placeholder-bien.jpg'} alt={annonce.titre} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <div className="absolute top-3 left-3 flex gap-2">
+                        <span className="bg-luxury-green text-white text-xs px-3 py-1 rounded-full">{annonce.transaction === 'VENTE' ? 'À vendre' : 'À louer'}</span>
+                        {annonce.prioritaire && <span className="bg-luxury-gold text-luxury-green-dark text-xs px-3 py-1 rounded-full font-bold">Premium</span>}
+                      </div>
+                      <button
+                        onClick={(e) => handleToggleFavori(e, annonce.id)}
+                        className="absolute bottom-3 right-3 p-2 bg-white/90 rounded-full hover:bg-white transition z-10"
+                      >
+                        <Heart
+                          size={18}
+                          className={isFavori ? 'fill-red-500 text-red-500' : 'text-gray-400 hover:text-red-500'}
+                        />
+                      </button>
                     </div>
-                    <div className="absolute bottom-3 right-3">
-                      <button className="p-2 bg-white/90 rounded-full hover:bg-white transition"><Heart size={18} className="text-gray-400 hover:text-red-500" /></button>
+                    <div className="p-5">
+                      <h3 className="font-display text-lg font-bold text-luxury-green-dark mb-2 line-clamp-1">{annonce.titre}</h3>
+                      <div className="flex items-center gap-1 text-gray-500 text-sm mb-3">
+                        <MapPin size={14} className="text-luxury-gold flex-shrink-0" /><span className="truncate">{annonce.quartier}, {annonce.ville}</span>
+                      </div>
+                      <div className="text-xl font-bold text-luxury-green mb-3">{formatPrix(annonce.prix)} FCFA{annonce.transaction === 'LOCATION' && <span className="text-sm font-normal text-gray-500">/mois</span>}</div>
+                      <div className="flex items-center gap-4 text-sm text-gray-400">
+                        {annonce.chambres && <span className="flex items-center gap-1"><Bed size={14} /> {annonce.chambres}</span>}
+                        {annonce.surface && <span className="flex items-center gap-1"><Maximize size={14} /> {annonce.surface} m²</span>}
+                        <span className="flex items-center gap-1 ml-auto"><Eye size={14} /> {annonce.vues}</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="p-5">
-                    <h3 className="font-display text-lg font-bold text-luxury-green-dark mb-2 line-clamp-1">{annonce.titre}</h3>
-                    <div className="flex items-center gap-1 text-gray-500 text-sm mb-3">
-                      <MapPin size={14} className="text-luxury-gold flex-shrink-0" /><span className="truncate">{annonce.quartier}, {annonce.ville}</span>
-                    </div>
-                    <div className="text-xl font-bold text-luxury-green mb-3">{formatPrix(annonce.prix)} FCFA{annonce.transaction === 'LOCATION' && <span className="text-sm font-normal text-gray-500">/mois</span>}</div>
-                    <div className="flex items-center gap-4 text-sm text-gray-400">
-                      {annonce.chambres && <span className="flex items-center gap-1"><Bed size={14} /> {annonce.chambres}</span>}
-                      {annonce.surface && <span className="flex items-center gap-1"><Maximize size={14} /> {annonce.surface} m²</span>}
-                      <span className="flex items-center gap-1 ml-auto"><Eye size={14} /> {annonce.vues}</span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
             {totalPages > 1 && (
               <div className="flex items-center justify-center gap-3 mt-10">
