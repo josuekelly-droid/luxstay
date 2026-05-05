@@ -272,6 +272,18 @@ model Favori {
   @@index([userId])
 }
 
+
+model Avis {
+  id          String   @id @default(cuid())
+  nom         String
+  role        String   @default("Acheteur") // Acheteur, Annonceur
+  commentaire String
+  etoiles     Int      @default(5)
+  valide      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+
 // ============================================
 // NOTIFICATIONS
 // ============================================

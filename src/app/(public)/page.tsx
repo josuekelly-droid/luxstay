@@ -10,6 +10,7 @@ import {
   Star, ChevronRight, Bed, Maximize, Eye, Loader2
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import AvisSection from '@/components/home/AvisSection';
 
 interface Annonce {
   id: string;
@@ -277,6 +278,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <AvisSection />
       
       {/* ========== DEVENIR ANNONCEUR ========== */}
       <section className="py-16 sm:py-20 bg-gradient-to-r from-luxury-gold to-luxury-gold-light">
