@@ -26,6 +26,13 @@ interface Annonce {
   images: { url: string }[];
 }
 
+const VILLES = [
+  'Cotonou', 'Abomey-Calavi', 'Porto-Novo', 'Parakou', 'Natitingou',
+  'Djougou', 'Bohicon', 'Abomey', 'Lokossa', 'Ouidah',
+  'Grand-Popo', 'Kandi', 'Malanville', 'Dassa-Zoumè', 'Savalou',
+  'Allada', 'Sèmè-Kpodji',
+];
+
 export default function HomePage() {
   const [biensVedette, setBiensVedette] = useState<Annonce[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -171,10 +178,9 @@ export default function HomePage() {
               </select>
               <select className="input-luxury text-sm" value={recherche.ville} onChange={(e) => setRecherche({...recherche, ville: e.target.value})}>
                 <option value="">Ville</option>
-                <option value="Cotonou">Cotonou</option>
-                <option value="Abomey-Calavi">Abomey-Calavi</option>
-                <option value="Porto-Novo">Porto-Novo</option>
-                <option value="Parakou">Parakou</option>
+                {VILLES.map(ville => (
+                  <option key={ville} value={ville}>{ville}</option>
+                ))}
               </select>
               <input type="number" placeholder="Budget max (FCFA)" className="input-luxury text-sm" value={recherche.prixMax} onChange={(e) => setRecherche({...recherche, prixMax: e.target.value})} />
               <Link href={rechercheUrl} className="w-full">
