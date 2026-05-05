@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { CreditCard, Wallet, Bitcoin, Loader2, ArrowLeft, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
+import PayPalButton from '@/components/paiement/PayPalButton';
 
 type Plan = 'STANDARD' | 'PREMIUM' | 'BUSINESS';
 type Duree = 'MENSUEL' | 'TROIS_MOIS' | 'ANNUEL';
@@ -43,6 +44,8 @@ function PaiementContent() {
   const formatPrix = (p: number) => new Intl.NumberFormat('fr-FR').format(p);
 
   const handlePayer = async () => {
+    if (modePaiement === 'PAYPAL') return; // Géré par le bouton PayPal direct
+
     setIsLoading(true);
 
     try {
@@ -127,8 +130,8 @@ function PaiementContent() {
                 },
                 {
                   id: 'PAYPAL',
-                  label: 'PayPal',
-                  description: 'Carte bancaire internationale',
+                  label: 'PayPal / Carte bancaire',
+                  description: 'Paiement direct par carte ou PayPal',
                   icon: <CreditCard size={24} />,
                   couleur: 'border-blue-600',
                   bg: 'bg-blue-50',
@@ -168,18 +171,39 @@ function PaiementContent() {
             </div>
           </div>
 
-          <button
-            onClick={handlePayer}
-            disabled={isLoading}
-            className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-lg disabled:opacity-50"
-          >
-            {isLoading ? (
-              <Loader2 size={24} className="animate-spin" />
-            ) : (
-              <CreditCard size={24} />
-            )}
-            {isLoading ? 'Redirection...' : `Payer ${formatPrix(montant)} FCFA`}
-          </button>
+          {/* PayPal Direct */}
+          {modePaiement === 'PAYPAL' && (
+            <div className="bg-blue-50 rounded-xl p-4">
+              <p className="text-sm text-gray-600 mb-3 text-center">
+                Vous allez payer {formatPrix(montant)} FCFA (~{(montant / 600).toFixed(2)} USD)
+              </p>
+              <PayPalButton
+                montant={montant}
+                plan={planParam}
+                duree={duree}
+                onSuccess={() => {
+                  toast.success('Abonnement activé !');
+                  router.push('/dashboard/abonnement');
+                }}
+              />
+            </div>
+          )}
+
+          {/* Bouton Payer pour FedaPay/Binance */}
+          {modePaiement !== 'PAYPAL' && (
+            <button
+              onClick={handlePayer}
+              disabled={isLoading}
+              className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-lg disabled:opacity-50"
+            >
+              {isLoading ? (
+                <Loader2 size={24} className="animate-spin" />
+              ) : (
+                <CreditCard size={24} />
+              )}
+              {isLoading ? 'Redirection...' : `Payer ${formatPrix(montant)} FCFA`}
+            </button>
+          )}
 
           <p className="text-xs text-gray-400 text-center">
             Paiement sécurisé. Vos données sont chiffrées et protégées.

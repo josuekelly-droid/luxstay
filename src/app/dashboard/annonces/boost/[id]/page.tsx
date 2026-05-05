@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, TrendingUp, ArrowLeft, Zap, Pin, Crown, Check, Wallet, CreditCard, Bitcoin } from 'lucide-react';
 import toast from 'react-hot-toast';
+import PayPalButton from '@/components/paiement/PayPalButton';
 
 const options = [
   {
@@ -42,7 +43,7 @@ const options = [
 
 const modesPaiement = [
   { id: 'FEDAPAY', label: 'Mobile Money', icon: <Wallet size={20} />, couleur: 'border-luxury-gold' },
-  { id: 'PAYPAL', label: 'PayPal', icon: <CreditCard size={20} />, couleur: 'border-blue-600' },
+  { id: 'PAYPAL', label: 'PayPal / Carte', icon: <CreditCard size={20} />, couleur: 'border-blue-600' },
   { id: 'BINANCE', label: 'Crypto', icon: <Bitcoin size={20} />, couleur: 'border-yellow-500' },
 ];
 
@@ -55,6 +56,7 @@ export default function BoostAnnoncePage() {
   const [modePaiement, setModePaiement] = useState('FEDAPAY');
   const [isLoading, setIsLoading] = useState(false);
   const [annonce, setAnnonce] = useState<any>(null);
+  const [paypalSuccess, setPaypalSuccess] = useState(false);
 
   useEffect(() => {
     if (id) fetchAnnonce();
@@ -74,6 +76,8 @@ export default function BoostAnnoncePage() {
       return;
     }
 
+    if (modePaiement === 'PAYPAL') return; // Géré par le bouton PayPal direct
+
     setIsLoading(true);
     try {
       const response = await fetch('/api/paiement/boost', {
@@ -90,7 +94,6 @@ export default function BoostAnnoncePage() {
       }
 
       if (data.url) {
-        // ✅ Rediriger vers la page de paiement sécurisée
         window.location.href = data.url;
       } else {
         toast.error('Paiement indisponible pour le moment.');
@@ -99,6 +102,32 @@ export default function BoostAnnoncePage() {
       toast.error('Erreur de connexion');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePayPalBoostSuccess = async () => {
+    setPaypalSuccess(true);
+    setIsLoading(true);
+    try {
+      // Activer le boost après paiement PayPal réussi
+      const boostRes = await fetch('/api/annonces/boost', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ annonceId: id, type: selected }),
+      });
+
+      if (boostRes.ok) {
+        toast.success(`Boost ${selected} activé pour ${options.find(o => o.id === selected)?.duree} jours !`);
+        router.push('/dashboard/annonces');
+        router.refresh();
+      } else {
+        toast.error('Paiement réussi mais erreur activation boost. Contactez le support.');
+      }
+    } catch (error) {
+      toast.error('Erreur activation boost');
+    } finally {
+      setIsLoading(false);
+      setPaypalSuccess(false);
     }
   };
 
@@ -145,7 +174,7 @@ export default function BoostAnnoncePage() {
       {selected && (
         <div className="bg-white rounded-2xl shadow-card p-5 space-y-3">
           <h3 className="font-semibold text-luxury-green-dark text-sm">Mode de paiement</h3>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {modesPaiement.map((mode) => (
               <button
                 key={mode.id}
@@ -164,22 +193,44 @@ export default function BoostAnnoncePage() {
         </div>
       )}
 
-      {/* Bouton Payer */}
-      <button
-        onClick={handlePayer}
-        disabled={isLoading || !selected}
-        className="btn-primary w-full flex items-center justify-center gap-2 py-4 disabled:opacity-50"
-      >
-        {isLoading ? (
-          <Loader2 size={20} className="animate-spin" />
-        ) : (
-          <TrendingUp size={20} />
-        )}
-        {isLoading
-          ? 'Redirection vers le paiement...'
-          : `Payer ${boostChoisi?.prix.toLocaleString('fr-FR') || ''} FCFA${modePaiement === 'PAYPAL' ? ' (~' + (boostChoisi ? (boostChoisi.prix / 600).toFixed(2) : '0') + ' USD)' : ''}`
-        }
-      </button>
+      {/* PayPal Direct */}
+      {selected && modePaiement === 'PAYPAL' && boostChoisi && (
+        <div className="bg-blue-50 rounded-xl p-4">
+          <p className="text-sm text-gray-600 mb-3 text-center">
+            Paiement de {boostChoisi.prix.toLocaleString('fr-FR')} FCFA (~{(boostChoisi.prix / 600).toFixed(2)} USD)
+          </p>
+          <PayPalButton
+            montant={boostChoisi.prix}
+            plan="BOOST"
+            duree="BOOST"
+            onSuccess={handlePayPalBoostSuccess}
+          />
+          {paypalSuccess && (
+            <div className="flex items-center justify-center gap-2 mt-3 text-sm text-luxury-green">
+              <Loader2 size={16} className="animate-spin" /> Activation du boost en cours...
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Bouton Payer (FedaPay / Binance) */}
+      {selected && modePaiement !== 'PAYPAL' && (
+        <button
+          onClick={handlePayer}
+          disabled={isLoading || !selected}
+          className="btn-primary w-full flex items-center justify-center gap-2 py-4 disabled:opacity-50"
+        >
+          {isLoading ? (
+            <Loader2 size={20} className="animate-spin" />
+          ) : (
+            <TrendingUp size={20} />
+          )}
+          {isLoading
+            ? 'Redirection vers le paiement...'
+            : `Payer ${boostChoisi?.prix.toLocaleString('fr-FR') || ''} FCFA`
+          }
+        </button>
+      )}
     </div>
   );
 }
