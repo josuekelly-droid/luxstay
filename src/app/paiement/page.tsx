@@ -43,8 +43,16 @@ function PaiementContent() {
   const montant = plan.tarifs[duree];
   const formatPrix = (p: number) => new Intl.NumberFormat('fr-FR').format(p);
 
+  const getConversion = () => {
+    const usd = (montant / 600).toFixed(2);
+    if (modePaiement === 'PAYPAL') return ` (~${usd} USD)`;
+    if (modePaiement === 'BINANCE') return ` (~${usd} USDT)`;
+    if (modePaiement === 'FEDAPAY') return ` (${formatPrix(montant)} FCFA)`;
+    return '';
+  };
+
   const handlePayer = async () => {
-    if (modePaiement === 'PAYPAL') return; // Géré par le bouton PayPal direct
+    if (modePaiement === 'PAYPAL') return;
 
     setIsLoading(true);
 
@@ -111,7 +119,12 @@ function PaiementContent() {
 
             <div className="flex justify-between text-2xl font-bold pt-3 border-t border-gray-200">
               <span className="text-luxury-green-dark">Total</span>
-              <span className="text-luxury-green">{formatPrix(montant)} FCFA</span>
+              <span className="text-luxury-green">
+                {formatPrix(montant)} FCFA
+                <span className="text-sm font-normal text-gray-500 ml-2">
+                  {getConversion()}
+                </span>
+              </span>
             </div>
           </div>
 
@@ -201,7 +214,7 @@ function PaiementContent() {
               ) : (
                 <CreditCard size={24} />
               )}
-              {isLoading ? 'Redirection...' : `Payer ${formatPrix(montant)} FCFA`}
+              {isLoading ? 'Redirection...' : `Payer ${formatPrix(montant)} FCFA${modePaiement === 'BINANCE' ? ' (~' + (montant / 600).toFixed(2) + ' USDT)' : ''}`}
             </button>
           )}
 
