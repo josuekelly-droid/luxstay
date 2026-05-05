@@ -20,6 +20,7 @@ import {
   Flag,
   TrendingUp,
   ChevronRight,
+  Star,
 } from 'lucide-react';
 
 const menuItems = [
@@ -52,6 +53,11 @@ const menuItems = [
     label: 'Signalements',
     href: '/admin/signalements',
     icon: <Flag size={20} />,
+  },
+  {
+  label: 'Avis',
+  href: '/admin/avis',
+  icon: <Star size={20} />,
   },
   {
     label: 'Paramètres',
