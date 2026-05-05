@@ -47,6 +47,7 @@ function PaiementContent() {
     const usd = (montant / 600).toFixed(2);
     if (modePaiement === 'PAYPAL') return ` (~${usd} USD)`;
     if (modePaiement === 'BINANCE') return ` (~${usd} USDT)`;
+    if (modePaiement === 'NOWPAYMENTS') return ` (~${usd} USD)`;
     if (modePaiement === 'FEDAPAY') return ` (${formatPrix(montant)} FCFA)`;
     return '';
   };
@@ -150,13 +151,13 @@ function PaiementContent() {
                   bg: 'bg-blue-50',
                 },
                 {
-                  id: 'BINANCE',
-                  label: 'Crypto (Binance Pay)',
-                  description: 'Bitcoin, USDT, Ethereum',
-                  icon: <Bitcoin size={24} />,
-                  couleur: 'border-yellow-500',
-                  bg: 'bg-yellow-50',
-                },
+  id: 'NOWPAYMENTS',
+  label: 'Crypto (BTC, ETH, USDT)',
+  description: 'Paiement en cryptomonnaies',
+  icon: <Bitcoin size={24} />,
+  couleur: 'border-yellow-500',
+  bg: 'bg-yellow-50',
+},
               ].map((mode) => (
                 <button
                   key={mode.id}

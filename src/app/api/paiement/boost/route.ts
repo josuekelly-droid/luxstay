@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { creerTransactionFedaPay } from '@/lib/paiement/fedapay';
 import { creerCommandePayPal } from '@/lib/paiement/paypal';
 import { creerPaiementBinance } from '@/lib/paiement/binance';
+import { creerPaiementCrypto } from '@/lib/paiement/nowpayments';
 import prisma from '@/lib/db';
 
 const TARIFS_BOOST: Record<string, number> = {
@@ -71,19 +72,29 @@ export async function POST(request: Request) {
         break;
       }
 
+      case 'NOWPAYMENTS': {
+        const montantUSD = parseFloat((montant / 600).toFixed(2));
+        const nowpaymentsResult = await creerPaiementCrypto(montantUSD, description, 'usdtbsc');
+        resultat = {
+          url: nowpaymentsResult.invoiceUrl,
+          transactionId: nowpaymentsResult.paymentId,
+        };
+        break;
+      }
+
       default:
         await prisma.paiement.update({
           where: { id: paiementId },
           data: { statut: 'ECHOUE' },
         });
         return NextResponse.json(
-          { error: 'Mode de paiement non supporté. Utilisez FEDAPAY, PAYPAL ou BINANCE' },
+          { error: 'Mode de paiement non supporté.' },
           { status: 400 }
         );
     }
 
     // Récupérer l'URL
-    const paymentUrl = resultat.url || resultat.approveUrl || resultat.checkoutUrl;
+    const paymentUrl = resultat.url || resultat.approveUrl || resultat.checkoutUrl || resultat.invoiceUrl;
 
     if (!paymentUrl) {
       await prisma.paiement.update({
@@ -115,16 +126,13 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('Erreur paiement boost:', error);
 
-    // Marquer comme échoué si la plateforme a planté
     if (paiementId) {
       try {
         await prisma.paiement.update({
           where: { id: paiementId },
           data: { statut: 'ECHOUE' },
         });
-      } catch (updateError) {
-        console.error('Erreur mise à jour statut échoué:', updateError);
-      }
+      } catch (updateError) {}
     }
 
     return NextResponse.json(

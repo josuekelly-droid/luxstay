@@ -6,10 +6,11 @@ import { prisma } from '@/lib/db';
 import { creerTransactionFedaPay } from '@/lib/paiement/fedapay';
 import { creerCommandePayPal } from '@/lib/paiement/paypal';
 import { creerPaiementBinance } from '@/lib/paiement/binance';
+import { creerPaiementCrypto } from '@/lib/paiement/nowpayments';
 
 type Plan = 'STANDARD' | 'PREMIUM' | 'BUSINESS';
 type Duree = 'MENSUEL' | 'TROIS_MOIS' | 'ANNUEL';
-type ModePaiement = 'FEDAPAY' | 'MOBILE_MONEY' | 'PAYPAL' | 'BINANCE';
+type ModePaiement = 'FEDAPAY' | 'MOBILE_MONEY' | 'PAYPAL' | 'BINANCE' | 'NOWPAYMENTS';
 
 interface PaiementResult {
   token?: string;
@@ -19,6 +20,7 @@ interface PaiementResult {
   status?: string;
   approveUrl?: string;
   checkoutUrl?: string;
+  invoiceUrl?: string;
 }
 
 const tarifs: Record<Plan, Record<Duree, number>> = {
@@ -112,6 +114,18 @@ export async function POST(request: Request) {
           'USDT',
           `Abonnement LuxStay ${plan} - ${duree}`
         );
+        break;
+
+      case 'NOWPAYMENTS':
+        const nowpaymentsResult = await creerPaiementCrypto(
+          Number((montant / 600).toFixed(2)),
+          `Abonnement LuxStay ${plan} - ${duree}`,
+          'usdtbsc'
+        );
+        resultat = {
+          url: nowpaymentsResult.invoiceUrl,
+          transactionId: nowpaymentsResult.paymentId,
+        };
         break;
 
       default:
