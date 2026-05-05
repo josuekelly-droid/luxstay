@@ -229,6 +229,9 @@ export default function AdminPaiementsPage() {
                       {p.statut === 'EN_ATTENTE' && (
                         <span className="text-xs text-yellow-600 flex items-center gap-1"><Clock size={14} /> En attente</span>
                       )}
+                      {p.statut === 'ECHOUE' && (
+                        <span className="text-xs text-red-600 flex items-center gap-1"><XCircle size={14} /> Échoué</span>
+                      )}
                     </td>
                     <td className="p-4 text-sm text-gray-500 whitespace-nowrap">
                       {p.datePaiement ? new Date(p.datePaiement).toLocaleDateString('fr-FR') : '-'}
