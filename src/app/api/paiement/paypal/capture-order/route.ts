@@ -25,68 +25,83 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const { orderId, plan, duree, montant } = await request.json();
+    const { orderId, plan, duree, montant, paiementId } = await request.json();
 
-    if (!orderId || !plan || !duree || !montant) {
-      return NextResponse.json({ error: 'Paramètres manquants' }, { status: 400 });
+    if (!orderId) {
+      return NextResponse.json({ error: 'OrderId manquant' }, { status: 400 });
     }
 
-    // Capturer le paiement PayPal
-    const capture = await capturerPaiementPayPal(orderId);
+    try {
+      // Capturer le paiement PayPal
+      const capture = await capturerPaiementPayPal(orderId);
 
-    if (!capture.success) {
-      return NextResponse.json({ error: 'Échec de la capture du paiement' }, { status: 400 });
+      if (!capture.success) {
+        // Marquer le paiement comme échoué
+        if (paiementId) {
+          await prisma.paiement.update({
+            where: { id: paiementId },
+            data: { statut: 'ECHOUE' },
+          });
+        }
+        return NextResponse.json({ error: 'Échec de la capture du paiement' }, { status: 400 });
+      }
+
+      const planType: PlanType = (plan as PlanType) || 'STANDARD';
+      const dureeType: DureeType = (duree as DureeType) || 'MENSUEL';
+      const jours = dureeEnJours[dureeType] || 30;
+
+      // Mettre à jour le paiement existant (créé dans create-order)
+      if (paiementId) {
+        await prisma.paiement.update({
+          where: { id: paiementId },
+          data: {
+            statut: 'COMPLETE',
+            transactionId: capture.captureId,
+            datePaiement: new Date(),
+          },
+        });
+      }
+
+      // Désactiver les anciens abonnements
+      await prisma.abonnement.updateMany({
+        where: { userId: session.user.id, actif: true },
+        data: { actif: false },
+      });
+
+      // Passer en ANNOUNCER
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { role: 'ANNOUNCER' },
+      });
+
+      // Créer le nouvel abonnement
+      await prisma.abonnement.create({
+        data: {
+          userId: session.user.id,
+          plan: planType,
+          duree: dureeType,
+          debut: new Date(),
+          fin: new Date(Date.now() + jours * 24 * 60 * 60 * 1000),
+          annoncesMax: annoncesParPlan[planType],
+          photosParAnnonce: photosParPlan[planType],
+          ...(paiementId ? { paiement: { connect: { id: paiementId } } } : {}),
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Paiement réussi - Abonnement ${planType} activé pour ${dureeType === 'MENSUEL' ? '1 mois' : dureeType === 'TROIS_MOIS' ? '3 mois' : '1 an'}`,
+      });
+    } catch (captureError: any) {
+      // Si la capture échoue, marquer le paiement comme échoué
+      if (paiementId) {
+        await prisma.paiement.update({
+          where: { id: paiementId },
+          data: { statut: 'ECHOUE' },
+        });
+      }
+      throw captureError;
     }
-
-    const planType: PlanType = plan;
-    const dureeType: DureeType = duree;
-    const jours = dureeEnJours[dureeType] || 30;
-
-    // Enregistrer le paiement
-    const paiement = await prisma.paiement.create({
-      data: {
-        userId: session.user.id,
-        modePaiement: 'PAYPAL',
-        montant,
-        devise: 'FCFA',
-        reference: orderId,
-        transactionId: capture.captureId,
-        statut: 'COMPLETE',
-        datePaiement: new Date(),
-        metaData: { plan, duree },
-      },
-    });
-
-    // Désactiver les anciens abonnements
-    await prisma.abonnement.updateMany({
-      where: { userId: session.user.id, actif: true },
-      data: { actif: false },
-    });
-
-    // Passer en ANNOUNCER
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: { role: 'ANNOUNCER' },
-    });
-
-    // Créer le nouvel abonnement
-    await prisma.abonnement.create({
-      data: {
-        userId: session.user.id,
-        plan: planType,
-        duree: dureeType,
-        debut: new Date(),
-        fin: new Date(Date.now() + jours * 24 * 60 * 60 * 1000),
-        annoncesMax: annoncesParPlan[planType],
-        photosParAnnonce: photosParPlan[planType],
-        paiement: { connect: { id: paiement.id } },
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: `Paiement réussi - Abonnement ${plan} activé pour ${dureeType === 'MENSUEL' ? '1 mois' : dureeType === 'TROIS_MOIS' ? '3 mois' : '1 an'}`,
-    });
   } catch (error: any) {
     console.error('Erreur capture-order PayPal:', error);
     return NextResponse.json(
