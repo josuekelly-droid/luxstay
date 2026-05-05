@@ -1,9 +1,9 @@
-// src/middleware.ts
+// src/proxy.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Éviter d'appeler la DB à chaque requête
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Ignorer les assets statiques et les APIs
   if (
     request.nextUrl.pathname.startsWith('/_next') ||
