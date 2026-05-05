@@ -14,6 +14,8 @@ const TARIFS_BOOST: Record<string, number> = {
 };
 
 export async function POST(request: Request) {
+  let paiementId: string | null = null;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -28,64 +30,77 @@ export async function POST(request: Request) {
 
     const montant = TARIFS_BOOST[type];
     const description = `Boost ${type} - Annonce ${annonceId}`;
+
+    // Enregistrer le paiement AVANT d'appeler la plateforme
+    const paiement = await prisma.paiement.create({
+      data: {
+        userId: session.user.id,
+        modePaiement,
+        montant,
+        devise: 'FCFA',
+        reference: `BOOST_${Date.now()}`,
+        statut: 'EN_ATTENTE',
+        metaData: { annonceId, typeBoost: type },
+      },
+    });
+
+    paiementId = paiement.id;
+
+    // Appeler la plateforme de paiement
     let resultat: any = {};
-    let devise = 'FCFA';
 
-    try {
-      switch (modePaiement) {
-        case 'FEDAPAY':
-          resultat = await creerTransactionFedaPay(montant, description, {
-            email: session.user.email || '',
-            nom: (session.user as any).nom || '',
-            prenom: (session.user as any).prenom || '',
-            telephone: (session.user as any).telephone || '',
-          });
-          break;
+    switch (modePaiement) {
+      case 'FEDAPAY':
+        resultat = await creerTransactionFedaPay(montant, description, {
+          email: session.user.email || '',
+          nom: (session.user as any).nom || '',
+          prenom: (session.user as any).prenom || '',
+          telephone: (session.user as any).telephone || '',
+        });
+        break;
 
-        case 'PAYPAL':
-          devise = 'USD';
-          const montantUSD = parseFloat((montant / 600).toFixed(2));
-          resultat = await creerCommandePayPal(montantUSD, description);
-          break;
-
-        case 'BINANCE':
-          devise = 'USDT';
-          const montantUSDT = parseFloat((montant / 600).toFixed(2));
-          resultat = await creerPaiementBinance(montantUSDT, 'USDT', description);
-          break;
-
-        default:
-          return NextResponse.json(
-            { error: 'Mode de paiement non supporté. Utilisez FEDAPAY, PAYPAL ou BINANCE' },
-            { status: 400 }
-          );
+      case 'PAYPAL': {
+        const montantUSD = parseFloat((montant / 600).toFixed(2));
+        resultat = await creerCommandePayPal(montantUSD, description);
+        break;
       }
-    } catch (error: any) {
-      return NextResponse.json(
-        { error: error.message || 'Erreur lors de la création du paiement' },
-        { status: 500 }
-      );
+
+      case 'BINANCE': {
+        const montantUSDT = parseFloat((montant / 600).toFixed(2));
+        resultat = await creerPaiementBinance(montantUSDT, 'USDT', description);
+        break;
+      }
+
+      default:
+        await prisma.paiement.update({
+          where: { id: paiementId },
+          data: { statut: 'ECHOUE' },
+        });
+        return NextResponse.json(
+          { error: 'Mode de paiement non supporté. Utilisez FEDAPAY, PAYPAL ou BINANCE' },
+          { status: 400 }
+        );
     }
 
-    // Récupérer l'URL selon le mode de paiement
+    // Récupérer l'URL
     const paymentUrl = resultat.url || resultat.approveUrl || resultat.checkoutUrl;
 
     if (!paymentUrl) {
+      await prisma.paiement.update({
+        where: { id: paiementId },
+        data: { statut: 'ECHOUE' },
+      });
       return NextResponse.json(
         { error: 'Impossible de créer le paiement. Vérifiez votre configuration.' },
         { status: 500 }
       );
     }
 
-    // Enregistrer le paiement
-    const paiement = await prisma.paiement.create({
+    // Mettre à jour la référence avec l'ID réel
+    await prisma.paiement.update({
+      where: { id: paiementId },
       data: {
-        userId: session.user.id,
-        modePaiement,
-        montant,
-        devise,
-        reference: resultat.transactionId || resultat.orderId || `BOOST_${Date.now()}`,
-        statut: 'EN_ATTENTE',
+        reference: resultat.transactionId || resultat.orderId || paiement.reference,
         metaData: { annonceId, typeBoost: type },
       },
     });
@@ -94,11 +109,24 @@ export async function POST(request: Request) {
       success: true,
       paiementId: paiement.id,
       montant,
-      devise,
+      devise: 'FCFA',
       url: paymentUrl,
     });
   } catch (error: any) {
     console.error('Erreur paiement boost:', error);
+
+    // Marquer comme échoué si la plateforme a planté
+    if (paiementId) {
+      try {
+        await prisma.paiement.update({
+          where: { id: paiementId },
+          data: { statut: 'ECHOUE' },
+        });
+      } catch (updateError) {
+        console.error('Erreur mise à jour statut échoué:', updateError);
+      }
+    }
+
     return NextResponse.json(
       { error: error.message || 'Erreur lors du paiement' },
       { status: 500 }
