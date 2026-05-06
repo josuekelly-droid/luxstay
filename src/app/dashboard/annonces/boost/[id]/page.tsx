@@ -44,7 +44,7 @@ const options = [
 const modesPaiement = [
   { id: 'FEDAPAY', label: 'Mobile Money', icon: <Wallet size={20} />, couleur: 'border-luxury-gold' },
   { id: 'PAYPAL', label: 'PayPal / Carte', icon: <CreditCard size={20} />, couleur: 'border-blue-600' },
-  { id: 'BINANCE', label: 'Crypto', icon: <Bitcoin size={20} />, couleur: 'border-yellow-500' },
+  { id: 'NOWPAYMENTS', label: 'Crypto', icon: <Bitcoin size={20} />, couleur: 'border-yellow-500' },
 ];
 
 export default function BoostAnnoncePage() {
@@ -70,13 +70,19 @@ export default function BoostAnnoncePage() {
     } catch (error) {}
   };
 
+  const getConversion = (prix: number) => {
+    if (modePaiement === 'PAYPAL') return ` (~${(prix / 600).toFixed(2)} USD)`;
+    if (modePaiement === 'NOWPAYMENTS') return ` (~${(prix / 600).toFixed(2)} USDT)`;
+    return '';
+  };
+
   const handlePayer = async () => {
     if (!selected) {
       toast.error('Choisissez un type de boost');
       return;
     }
 
-    if (modePaiement === 'PAYPAL') return; // Géré par le bouton PayPal direct
+    if (modePaiement === 'PAYPAL') return;
 
     setIsLoading(true);
     try {
@@ -109,7 +115,6 @@ export default function BoostAnnoncePage() {
     setPaypalSuccess(true);
     setIsLoading(true);
     try {
-      // Activer le boost après paiement PayPal réussi
       const boostRes = await fetch('/api/annonces/boost', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -197,7 +202,7 @@ export default function BoostAnnoncePage() {
       {selected && modePaiement === 'PAYPAL' && boostChoisi && (
         <div className="bg-blue-50 rounded-xl p-4">
           <p className="text-sm text-gray-600 mb-3 text-center">
-            Paiement de {boostChoisi.prix.toLocaleString('fr-FR')} FCFA (~{(boostChoisi.prix / 600).toFixed(2)} USD)
+            Paiement de {boostChoisi.prix.toLocaleString('fr-FR')} FCFA{getConversion(boostChoisi.prix)}
           </p>
           <PayPalButton
             montant={boostChoisi.prix}
@@ -213,7 +218,7 @@ export default function BoostAnnoncePage() {
         </div>
       )}
 
-      {/* Bouton Payer (FedaPay / Binance) */}
+      {/* Bouton Payer (FedaPay / NowPayments) */}
       {selected && modePaiement !== 'PAYPAL' && (
         <button
           onClick={handlePayer}
@@ -227,7 +232,7 @@ export default function BoostAnnoncePage() {
           )}
           {isLoading
             ? 'Redirection vers le paiement...'
-            : `Payer ${boostChoisi?.prix.toLocaleString('fr-FR') || ''} FCFA`
+            : `Payer ${boostChoisi?.prix.toLocaleString('fr-FR') || ''} FCFA${getConversion(boostChoisi?.prix || 0)}`
           }
         </button>
       )}
