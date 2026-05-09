@@ -6,6 +6,8 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import ChatBot from '@/components/chatbot/ChatBot';
 import { Toaster } from 'react-hot-toast';
+import { Analytics } from '@vercel/analytics/react';
+import CookieBanner from '@/components/layout/CookieBanner';
 
 export const viewport: Viewport = {
   themeColor: '#1A5F4A',
@@ -122,6 +124,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
           <Footer />
           <ChatBot />
+          <Analytics
+  beforeSend={(event) => {
+    if (typeof window !== 'undefined') {
+      const consent = document.cookie.includes('luxstay-cookie-consent=true');
+      return consent ? event : null;
+    }
+    return null;
+  }}
+/>
+          <CookieBanner />
           <Toaster position="top-center" />
         </SessionProvider>
       </body>
