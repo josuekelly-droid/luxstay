@@ -70,6 +70,15 @@ enum ModePaiement {
   NOWPAYMENTS
 }
 
+model MagicToken {
+  id        String    @id @default(cuid())
+  email     String
+  token     String    @unique
+  utilisateurId String?
+  expires   DateTime
+  createdAt DateTime  @default(now())
+}
+
 // ============================================
 // UTILISATEURS
 // ============================================

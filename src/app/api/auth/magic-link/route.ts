@@ -14,25 +14,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email requis' }, { status: 400 });
     }
 
-    // Vérifier si l'utilisateur existe
+    
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return NextResponse.json({ error: 'Aucun compte trouvé avec cet email' }, { status: 404 });
     }
 
-    // Générer un token temporaire (valable 1h)
+    
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 3600000); // 1 heure
 
-    // Stocker le token en base (à ajouter dans le schéma Prisma si besoin)
-    await prisma.user.update({
-      where: { email },
+    
+    await prisma.magicToken.deleteMany({ where: { email } });
+
+    // Stocker le token en base
+    await prisma.magicToken.create({
       data: {
-        // On pourrait stocker le token dans une table dédiée, mais pour simplifier :
+        email,
+        token,
+        utilisateurId: user.id,
+        expires,
       },
     });
 
-    const magicLink = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/magic-link/verify?token=${token}&email=${encodeURIComponent(email)}`;
+    const magicLink = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/magic-link/verify?token=${token}`;
 
     await resend.emails.send({
       from: 'LuxStay <onboarding@resend.dev>',
@@ -47,6 +52,7 @@ export async function POST(request: Request) {
           <div style="padding:40px 30px;background:white;text-align:center">
             <p style="color:#1A5F4A;font-size:16px;margin:0 0 30px">Cliquez ci-dessous pour vous connecter :</p>
             <a href="${magicLink}" style="display:inline-block;background:#D4A843;color:#0F2A1E;padding:14px 40px;border-radius:12px;text-decoration:none;font-weight:600;font-size:16px">Se connecter</a>
+            <p style="color:#999;font-size:12px;margin:20px 0 0">Ce lien expire dans 1 heure.</p>
           </div>
         </div>
       `,
