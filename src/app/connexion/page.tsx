@@ -34,6 +34,7 @@ export default function ConnexionPage() {
       if (result?.error) {
         toast.error(result.error);
       } else if (result?.ok) {
+        await new Promise(resolve => setTimeout(resolve, 500));
         const sessionRes = await fetch('/api/auth/session');
         const sessionData = await sessionRes.json();
 
@@ -64,18 +65,20 @@ export default function ConnexionPage() {
     setIsSendingMagic(true);
 
     try {
-      const result = await signIn('email', {
-        email: magicEmail,
-        redirect: false,
-        callbackUrl: '/dashboard',
+      const res = await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: magicEmail }),
       });
 
-      if (result?.ok) {
+      const data = await res.json();
+
+      if (res.ok) {
         toast.success('Lien de connexion envoyé ! Vérifiez votre boîte mail.');
         setShowMagicLink(false);
         setMagicEmail('');
       } else {
-        toast.error(result?.error || 'Erreur lors de l\'envoi');
+        toast.error(data.error || 'Erreur lors de l\'envoi');
       }
     } catch (error) {
       toast.error('Erreur lors de l\'envoi');
