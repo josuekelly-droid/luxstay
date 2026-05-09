@@ -3,11 +3,11 @@ import { NextAuthOptions, DefaultSession, DefaultUser } from "next-auth";
 import { JWT, DefaultJWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
-// import EmailProvider from "next-auth/providers/email"; // ← Commenté
+// import EmailProvider from "next-auth/providers/email";
 import bcrypt from "bcryptjs";
 import { prisma } from "./db";
 
-// Étendre les types pour inclure nos champs personnalisés
+
 declare module "next-auth" {
   interface Session {
     user: {
@@ -47,10 +47,10 @@ export const authOptions: NextAuthOptions = {
     signIn: "/connexion",
     error: "/connexion",
     newUser: "/dashboard",
-    // verifyRequest: "/connexion?verify=1", // ← Commenté
+    // verifyRequest: "/connexion?verify=1", 
   },
   providers: [
-    // 🔑 Magic Link - Désactivé temporairement (nécessite nodemailer + config)
+    
     /*
     EmailProvider({
       server: {
