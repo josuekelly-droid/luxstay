@@ -24,7 +24,7 @@ export default function MentionsLegalesPage() {
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li>Siège social : Haie Vive, Cotonou, Bénin</li>
               <li>Téléphone : +229 54 66 62 68</li>
-              <li>Email : luxstay-bj@outlook.com</li>
+              <li>Email : luxstayafrica@hotmail.com</li>
               <li>Directeur de publication : LuxStay</li>
             </ul>
           </section>
@@ -46,7 +46,7 @@ export default function MentionsLegalesPage() {
 
           <section>
             <h2 className="font-display text-xl font-bold text-luxury-green-dark mb-3">4. Protection des données</h2>
-            <p>Conformément à la loi n°2017-20 du 20 avril 2017 portant code du numérique en République du Bénin, vous disposez d&apos;un droit d&apos;accès, de rectification et de suppression de vos données personnelles. Pour l&apos;exercer, contactez-nous à <strong>luxstay-bj@outlook.com</strong>.</p>
+            <p>Conformément à la loi n°2017-20 du 20 avril 2017 portant code du numérique en République du Bénin, vous disposez d&apos;un droit d&apos;accès, de rectification et de suppression de vos données personnelles. Pour l&apos;exercer, contactez-nous à <strong>luxstayafrica@hotmail.com</strong>.</p>
           </section>
 
           <section>

@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     // Envoyer l'email
     const { data, error } = await resend.emails.send({
       from: 'LuxStay <onboarding@resend.dev>',
-      to: ['luxstay-bj@outlook.com'],
+      to: ['luxstayafrica@hotmail.com'],
       replyTo: email,
       subject: `[LuxStay] ${sujet}`,
       html: `

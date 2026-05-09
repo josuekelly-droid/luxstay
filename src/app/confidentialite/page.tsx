@@ -59,7 +59,7 @@ export default function ConfidentialitePage() {
               <li>Droit à l&apos;effacement</li>
               <li>Droit à la portabilité</li>
             </ul>
-            <p className="mt-2">Pour exercer ces droits, contactez-nous à <strong className="text-luxury-green">luxstay-bj@outlook.com</strong>.</p>
+            <p className="mt-2">Pour exercer ces droits, contactez-nous à <strong className="text-luxury-green">luxstayafrica@hotmail.com</strong>.</p>
           </section>
         </div>
       </div>

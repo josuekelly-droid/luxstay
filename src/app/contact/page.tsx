@@ -72,7 +72,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <h3 className="font-semibold text-luxury-green-dark mb-1">Email</h3>
-                <p className="text-gray-600">luxstay-bj@outlook.com</p>
+                <p className="text-gray-600">luxstayafrica@hotmail.com</p>
                 <p className="text-gray-400 text-sm">Réponse sous 24h</p>
               </div>
             </div>
