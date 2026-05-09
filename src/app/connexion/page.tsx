@@ -5,13 +5,16 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, LogIn, Mail, Lock } from 'lucide-react';
+import { Eye, EyeOff, LogIn, Mail, Lock, Send, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function ConnexionPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showMagicLink, setShowMagicLink] = useState(false);
+  const [magicEmail, setMagicEmail] = useState('');
+  const [isSendingMagic, setIsSendingMagic] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -50,6 +53,37 @@ export default function ConnexionPage() {
     }
   };
 
+  const handleMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!magicEmail.trim()) {
+      toast.error('Veuillez entrer votre email');
+      return;
+    }
+
+    setIsSendingMagic(true);
+
+    try {
+      const result = await signIn('email', {
+        email: magicEmail,
+        redirect: false,
+        callbackUrl: '/dashboard',
+      });
+
+      if (result?.ok) {
+        toast.success('Lien de connexion envoyé ! Vérifiez votre boîte mail.');
+        setShowMagicLink(false);
+        setMagicEmail('');
+      } else {
+        toast.error(result?.error || 'Erreur lors de l\'envoi');
+      }
+    } catch (error) {
+      toast.error('Erreur lors de l\'envoi');
+    } finally {
+      setIsSendingMagic(false);
+    }
+  };
+
   return (
     <main className="min-h-screen pt-28 pb-16 flex items-start justify-center bg-luxury-sand-light px-4">
       <div className="max-w-md w-full mt-8 sm:mt-12">
@@ -59,103 +93,157 @@ export default function ConnexionPage() {
             <span className="text-luxury-gold">LUX</span>
             <span className="text-luxury-green">STAY</span>
           </Link>
-          <p className="text-gray-600 mt-2">Connectez-vous à votre compte</p>
+          <p className="text-gray-600 mt-2">
+            {showMagicLink ? 'Recevez un lien de connexion' : 'Connectez-vous à votre compte'}
+          </p>
         </div>
 
-        {/* Formulaire */}
-        <div className="bg-white rounded-2xl shadow-luxury p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-luxury-green-dark mb-2">
-                Adresse email
-              </label>
-              <div className="relative">
-                <Mail size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="input-luxury pl-10"
-                  placeholder="votre@email.com"
-                />
-              </div>
-            </div>
+        {/* Formulaire Magic Link */}
+        {showMagicLink ? (
+          <div className="bg-white rounded-2xl shadow-luxury p-8">
+            <button
+              onClick={() => setShowMagicLink(false)}
+              className="text-sm text-gray-500 hover:text-luxury-green flex items-center gap-1 mb-6"
+            >
+              <ArrowLeft size={16} /> Retour à la connexion
+            </button>
 
-            <div>
-              <label className="block text-sm font-medium text-luxury-green-dark mb-2">
-                Mot de passe
-              </label>
-              <div className="relative">
-                <Lock size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="input-luxury pl-10 pr-10"
-                  placeholder="••••••••"
-                />
+            <form onSubmit={handleMagicLink} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-luxury-green-dark mb-2">
+                  Votre adresse email
+                </label>
+                <div className="relative">
+                  <Mail size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="email"
+                    required
+                    value={magicEmail}
+                    onChange={(e) => setMagicEmail(e.target.value)}
+                    className="input-luxury pl-10"
+                    placeholder="votre@email.com"
+                  />
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-500">
+                Nous vous enverrons un lien magique par email pour vous connecter instantanément, sans mot de passe.
+              </p>
+
+              <button
+                type="submit"
+                disabled={isSendingMagic}
+                className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isSendingMagic ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Send size={20} />
+                )}
+                {isSendingMagic ? 'Envoi...' : 'Envoyer le lien de connexion'}
+              </button>
+            </form>
+          </div>
+        ) : (
+          /* Formulaire classique */
+          <div className="bg-white rounded-2xl shadow-luxury p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-luxury-green-dark mb-2">
+                  Adresse email
+                </label>
+                <div className="relative">
+                  <Mail size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="input-luxury pl-10"
+                    placeholder="votre@email.com"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-luxury-green-dark mb-2">
+                  Mot de passe
+                </label>
+                <div className="relative">
+                  <Lock size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="input-luxury pl-10 pr-10"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Mot de passe oublié */}
+              <div className="text-right">
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => setShowMagicLink(true)}
+                  className="text-sm text-luxury-green hover:underline"
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  Mot de passe oublié ?
                 </button>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <LogIn size={20} />
+                )}
+                {isLoading ? 'Connexion...' : 'Se connecter'}
+              </button>
+            </form>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white text-gray-500">ou continuer avec</span>
               </div>
             </div>
 
             <button
-              type="submit"
-              disabled={isLoading}
-              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
+              onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+              className="w-full flex items-center justify-center gap-3 border-2 border-gray-200 rounded-xl py-3 hover:bg-gray-50 transition font-medium"
             >
-              {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <LogIn size={20} />
-              )}
-              {isLoading ? 'Connexion...' : 'Se connecter'}
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              Google
             </button>
-          </form>
 
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">ou continuer avec</span>
-            </div>
+            <p className="text-center mt-6 text-sm text-gray-600">
+              Pas encore de compte ?{' '}
+              <Link href="/inscription" className="text-luxury-green font-semibold hover:underline">
+                S&apos;inscrire
+              </Link>
+            </p>
           </div>
-
-          <button
-            onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
-            className="w-full flex items-center justify-center gap-3 border-2 border-gray-200 rounded-xl py-3 hover:bg-gray-50 transition font-medium"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-            </svg>
-            Google
-          </button>
-
-          <p className="text-center mt-6 text-sm text-gray-600">
-            Pas encore de compte ?{' '}
-            <Link href="/inscription" className="text-luxury-green font-semibold hover:underline">
-              S&apos;inscrire
-            </Link>
-          </p>
-        </div>
-
-        {/* <div className="mt-6 bg-luxury-green/5 rounded-xl p-4 text-sm">
-          <p className="font-semibold text-luxury-green-dark mb-2">🔑 Identifiants de test :</p>
-          <p className="text-gray-600">admin@luxstay.bj / user123</p>
-          <p className="text-gray-600">annonceur1@luxstay.bj / user123</p>
-          <p className="text-gray-600">user@luxstay.bj / user123</p>
-        </div> */}
+        )}
       </div>
     </main>
   );
