@@ -124,15 +124,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
           <Footer />
           <ChatBot />
-          <Analytics
-  beforeSend={(event) => {
-    if (typeof window !== 'undefined') {
-      const consent = document.cookie.includes('luxstay-cookie-consent=true');
-      return consent ? event : null;
-    }
-    return null;
-  }}
-/>
+          <Analytics />
           <CookieBanner />
           <Toaster position="top-center" />
         </SessionProvider>
