@@ -1,6 +1,7 @@
 // src/app/api/webhooks/paypal/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { envoyerEmailAbonnement, envoyerEmailBoost } from '@/lib/email/confirmations';
 
 type PlanType = 'GRATUIT' | 'STANDARD' | 'PREMIUM' | 'BUSINESS';
 type DureeType = 'MENSUEL' | 'TROIS_MOIS' | 'ANNUEL';
@@ -38,9 +39,38 @@ export async function POST(request: Request) {
         const metaData = paiement.metaData as any;
         if (metaData?.annonceId && metaData?.typeBoost) {
           await activerBoost(metaData.annonceId, metaData.typeBoost);
+
+          // Envoyer email boost
+          const annonce = await prisma.annonce.findUnique({ where: { id: metaData.annonceId } });
+          const user = await prisma.user.findUnique({ where: { id: paiement.userId } });
+          if (user && annonce) {
+            const durees: Record<string, number> = { BOOST: 7, EPINGLEE: 15, PRIORITAIRE: 30 };
+            const duree = durees[metaData.typeBoost] || 7;
+            const dateFin = new Date(Date.now() + duree * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR');
+            await envoyerEmailBoost(
+              user.email, user.prenom, user.nom,
+              metaData.typeBoost, paiement.montant, duree, dateFin,
+              'PAYPAL', annonce.titre
+            );
+          }
+
           console.log(`✅ Boost PayPal ${metaData.typeBoost} activé pour annonce ${metaData.annonceId}`);
         } else {
-          await activerAbonnement(paiement.userId, paiement.id);
+          const abonnement = await activerAbonnement(paiement.userId, paiement.id);
+
+          // Envoyer email abonnement
+          if (abonnement) {
+            const user = await prisma.user.findUnique({ where: { id: paiement.userId } });
+            if (user) {
+              const dureeLabel = abonnement.duree === 'MENSUEL' ? '1 mois' : abonnement.duree === 'TROIS_MOIS' ? '3 mois' : '1 an';
+              await envoyerEmailAbonnement(
+                user.email, user.prenom, user.nom,
+                abonnement.plan, paiement.montant, dureeLabel,
+                new Date(abonnement.fin).toLocaleDateString('fr-FR'),
+                'PAYPAL'
+              );
+            }
+          }
         }
 
         console.log(`✅ Paiement PayPal validé: ${captureId}`);
@@ -53,10 +83,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
-
-// ==========================================
-// FONCTIONS UTILITAIRES
-// ==========================================
 
 async function activerAbonnement(userId: string, paiementId: string) {
   await prisma.abonnement.updateMany({
@@ -73,12 +99,12 @@ async function activerAbonnement(userId: string, paiementId: string) {
     where: { id: paiementId },
   });
 
-  if (!paiement) return;
+  if (!paiement) return null;
 
   const plan: PlanType = determinerPlan(paiement.montant);
   const duree: DureeType = determinerDuree(paiement.montant, plan);
 
-  await prisma.abonnement.create({
+  const abonnement = await prisma.abonnement.create({
     data: {
       userId,
       plan,
@@ -90,29 +116,20 @@ async function activerAbonnement(userId: string, paiementId: string) {
       paiement: { connect: { id: paiementId } },
     },
   });
+
+  return abonnement;
 }
 
 async function activerBoost(annonceId: string, type: string) {
-  const durees: Record<string, number> = {
-    BOOST: 7,
-    EPINGLEE: 15,
-    PRIORITAIRE: 30,
-  };
-
+  const durees: Record<string, number> = { BOOST: 7, EPINGLEE: 15, PRIORITAIRE: 30 };
   const duree = durees[type] || 7;
-
   const updateData: any = {
     dateExpiration: new Date(Date.now() + duree * 24 * 60 * 60 * 1000),
   };
-
   if (type === 'BOOST') updateData.boost = true;
   if (type === 'EPINGLEE') updateData.epinglee = true;
   if (type === 'PRIORITAIRE') updateData.prioritaire = true;
-
-  await prisma.annonce.update({
-    where: { id: annonceId },
-    data: updateData,
-  });
+  await prisma.annonce.update({ where: { id: annonceId }, data: updateData });
 }
 
 function determinerPlan(montant: number): PlanType {
@@ -129,7 +146,6 @@ function determinerDuree(montant: number, plan: PlanType): DureeType {
     PREMIUM:  { MENSUEL: 35000,  TROIS_MOIS: 89250,  ANNUEL: 294000  },
     BUSINESS: { MENSUEL: 70000,  TROIS_MOIS: 178500, ANNUEL: 588000  },
   };
-
   const planTarifs = tarifs[plan];
   if (montant === planTarifs.ANNUEL) return 'ANNUEL';
   if (montant === planTarifs.TROIS_MOIS) return 'TROIS_MOIS';
@@ -137,27 +153,13 @@ function determinerDuree(montant: number, plan: PlanType): DureeType {
 }
 
 function dureeEnJours(duree: DureeType): number {
-  switch (duree) {
-    case 'ANNUEL': return 365;
-    case 'TROIS_MOIS': return 90;
-    default: return 30;
-  }
+  switch (duree) { case 'ANNUEL': return 365; case 'TROIS_MOIS': return 90; default: return 30; }
 }
 
 function annoncesParPlan(plan: PlanType): number {
-  switch (plan) {
-    case 'BUSINESS': return 999999;
-    case 'PREMIUM': return 50;
-    case 'STANDARD': return 15;
-    default: return 5;
-  }
+  switch (plan) { case 'BUSINESS': return 999999; case 'PREMIUM': return 50; case 'STANDARD': return 15; default: return 5; }
 }
 
 function photosParPlan(plan: PlanType): number {
-  switch (plan) {
-    case 'BUSINESS': return 30;
-    case 'PREMIUM': return 20;
-    case 'STANDARD': return 10;
-    default: return 5;
-  }
+  switch (plan) { case 'BUSINESS': return 30; case 'PREMIUM': return 20; case 'STANDARD': return 10; default: return 5; }
 }

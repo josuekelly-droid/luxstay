@@ -1,11 +1,11 @@
 // src/app/api/webhooks/nowpayments/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { envoyerEmailAbonnement, envoyerEmailBoost } from '@/lib/email/confirmations';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const signature = request.headers.get('x-nowpayments-sig');
 
     console.log('📥 Webhook NowPayments reçu:', body.payment_status);
 
@@ -37,9 +37,37 @@ export async function POST(request: Request) {
         const metaData = paiement.metaData as any;
         if (metaData?.annonceId && metaData?.typeBoost) {
           await activerBoostNowPayments(metaData.annonceId, metaData.typeBoost);
+
+          // Envoyer email boost
+          const annonce = await prisma.annonce.findUnique({ where: { id: metaData.annonceId } });
+          const user = await prisma.user.findUnique({ where: { id: paiement.userId } });
+          if (user && annonce) {
+            const durees: Record<string, number> = { BOOST: 7, EPINGLEE: 15, PRIORITAIRE: 30 };
+            const duree = durees[metaData.typeBoost] || 7;
+            const dateFin = new Date(Date.now() + duree * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR');
+            await envoyerEmailBoost(
+              user.email, user.prenom, user.nom,
+              metaData.typeBoost, paiement.montant, duree, dateFin,
+              'NOWPAYMENTS', annonce.titre
+            );
+          }
+
           console.log(`✅ Boost NowPayments ${metaData.typeBoost} activé pour annonce ${metaData.annonceId}`);
         } else {
-          await activerAbonnementNowPayments(paiement.userId, paiement.id);
+          const abonnement = await activerAbonnementNowPayments(paiement.userId, paiement.id);
+
+          // Envoyer email abonnement
+          if (abonnement) {
+            const user = await prisma.user.findUnique({ where: { id: paiement.userId } });
+            if (user) {
+              await envoyerEmailAbonnement(
+                user.email, user.prenom, user.nom,
+                abonnement.plan, paiement.montant, '1 mois',
+                new Date(abonnement.fin).toLocaleDateString('fr-FR'),
+                'NOWPAYMENTS'
+              );
+            }
+          }
         }
 
         console.log(`✅ Paiement NowPayments validé: ${paymentId}`);
@@ -68,7 +96,7 @@ async function activerAbonnementNowPayments(userId: string, paiementId: string) 
     where: { id: paiementId },
   });
 
-  if (!paiement) return;
+  if (!paiement) return null;
 
   const plan = paiement.montant >= 70000 ? 'BUSINESS' :
                paiement.montant >= 35000 ? 'PREMIUM' :
@@ -82,7 +110,7 @@ async function activerAbonnementNowPayments(userId: string, paiementId: string) 
                             plan === 'PREMIUM' ? 20 :
                             plan === 'STANDARD' ? 10 : 5;
 
-  await prisma.abonnement.create({
+  const abonnement = await prisma.abonnement.create({
     data: {
       userId,
       plan,
@@ -94,27 +122,16 @@ async function activerAbonnementNowPayments(userId: string, paiementId: string) 
       paiement: { connect: { id: paiementId } },
     },
   });
+
+  return abonnement;
 }
 
 async function activerBoostNowPayments(annonceId: string, type: string) {
-  const durees: Record<string, number> = {
-    BOOST: 7,
-    EPINGLEE: 15,
-    PRIORITAIRE: 30,
-  };
-
+  const durees: Record<string, number> = { BOOST: 7, EPINGLEE: 15, PRIORITAIRE: 30 };
   const duree = durees[type] || 7;
-
-  const updateData: any = {
-    dateExpiration: new Date(Date.now() + duree * 24 * 60 * 60 * 1000),
-  };
-
+  const updateData: any = { dateExpiration: new Date(Date.now() + duree * 24 * 60 * 60 * 1000) };
   if (type === 'BOOST') updateData.boost = true;
   if (type === 'EPINGLEE') updateData.epinglee = true;
   if (type === 'PRIORITAIRE') updateData.prioritaire = true;
-
-  await prisma.annonce.update({
-    where: { id: annonceId },
-    data: updateData,
-  });
+  await prisma.annonce.update({ where: { id: annonceId }, data: updateData });
 }
