@@ -156,8 +156,8 @@ export default function Footer() {
             {/* Réseaux sociaux */}
             <div className="flex gap-2.5 sm:gap-3 mt-5 sm:mt-6">
               {[
-                { icon: <FacebookIcon />, href: '#', label: 'Facebook' },
-                { icon: <InstagramIcon />, href: '#', label: 'Instagram' },
+                { icon: <FacebookIcon />, href: 'https://www.facebook.com/share/14diT9MG5ZF', label: 'Facebook' },
+                { icon: <InstagramIcon />, href: 'https://www.instagram.com/luxstayafrica', label: 'Instagram' },
                 { icon: <TwitterIcon />, href: '#', label: 'Twitter' },
                 { icon: <LinkedinIcon />, href: '#', label: 'LinkedIn' },
               ].map((social, index) => (
