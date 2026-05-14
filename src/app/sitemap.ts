@@ -3,7 +3,7 @@ import { MetadataRoute } from 'next';
 import prisma from '@/lib/db';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://luxstay-bj.vercel.app';
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://luxstay-bj.vercel.app').replace(/\/$/, '');
 
   
   const staticPages = [

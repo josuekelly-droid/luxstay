@@ -162,7 +162,7 @@ npm run prisma:seed
 # 6. Lancer le serveur de développement
 npm run dev
 
-🔐 Variables d'Environnement
+🔐 Variables d'Environnement:
 
 # Base de données
 DATABASE_URL="postgresql://..."
