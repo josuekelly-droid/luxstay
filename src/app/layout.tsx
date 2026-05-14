@@ -94,8 +94,8 @@ export const metadata: Metadata = {
   
   twitter: {
     card: 'summary_large_image',
-    site: '@luxstay_bj',
-    creator: '@luxstay_bj',
+    site: '@luxstay-bj',
+    creator: '@luxstay-bj',
     title: 'LuxStay - Immobilier de luxe au Bénin',
     description:
       'Trouvez votre chez-vous idéal au Bénin. Appartements, villas, parcelles à Cotonou, Porto-Novo, Parakou et Abomey-Calavi. Annonces vérifiées.',
